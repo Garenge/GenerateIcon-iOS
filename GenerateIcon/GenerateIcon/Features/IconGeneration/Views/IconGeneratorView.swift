@@ -17,7 +17,12 @@ struct IconGeneratorView: View {
                     if geometry.size.width > 800 {
                         IconTypeSelectorView(
                             selectedType: $selectedIconType,
-                            onAITap: { showingAIModal = true }
+                            onAITap: { showingAIModal = true },
+                            isInAIMode: viewModel.isInAIMode,
+                            onExitAI: {
+                                viewModel.clearAIIcon()
+                                viewModel.refreshPreview()
+                            }
                         )
                         .frame(width: 200)
                     }
@@ -27,13 +32,20 @@ struct IconGeneratorView: View {
                         // 图标选择按钮（小屏设备）
                         if geometry.size.width <= 800 {
                             Button(action: {
-                                showingIconSelector = true
+                                if viewModel.isInAIMode {
+                                    // AI模式下点击按钮，直接退出AI模式，显示原先的预设图标
+                                    viewModel.clearAIIcon()
+                                    viewModel.refreshPreview()
+                                } else {
+                                    // 预设模式下点击按钮，打开选择器
+                                    showingIconSelector = true
+                                }
                             }) {
                                 HStack {
                                     Text(viewModel.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
                                         .font(.headline)
                                     Spacer()
-                                    Image(systemName: "chevron.down")
+                                    Image(systemName: viewModel.isInAIMode ? "xmark.circle" : "chevron.down")
                                 }
                                 .padding()
                                 .background(viewModel.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
@@ -173,6 +185,11 @@ struct IconGeneratorView: View {
                 onAITap: { 
                     showingIconSelector = false
                     showingAIModal = true
+                },
+                isInAIMode: viewModel.isInAIMode,
+                onExitAI: {
+                    viewModel.clearAIIcon()
+                    viewModel.refreshPreview()
                 }
             )
         }
@@ -207,6 +224,8 @@ struct IconGeneratorView: View {
 struct IconTypeSelectorView: View {
     @Binding var selectedType: IconType
     let onAITap: () -> Void
+    let isInAIMode: Bool
+    let onExitAI: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -250,12 +269,18 @@ struct IconTypeSelectorView: View {
                     .padding(.horizontal)
                 
                 LazyVStack(spacing: 6) {
-                    Button(action: onAITap) {
+                    Button(action: {
+                        if isInAIMode {
+                            onExitAI()
+                        } else {
+                            onAITap()
+                        }
+                    }) {
                         HStack {
                             Text("🎨 AI生成")
                                 .font(.subheadline)
                             Spacer()
-                            Image(systemName: "sparkles")
+                            Image(systemName: isInAIMode ? "xmark.circle" : "sparkles")
                                 .foregroundColor(.orange)
                         }
                         .padding()

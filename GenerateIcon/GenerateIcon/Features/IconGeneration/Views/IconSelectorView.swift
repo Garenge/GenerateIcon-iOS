@@ -4,6 +4,8 @@ import SwiftUI
 struct IconSelectorView: View {
     @Binding var selectedType: IconType
     let onAITap: () -> Void
+    let isInAIMode: Bool
+    let onExitAI: () -> Void
     
     @Environment(\.dismiss) private var dismiss
     @State private var scrollOffset: CGFloat = 0
@@ -52,13 +54,18 @@ struct IconSelectorView: View {
                                 .padding(.horizontal)
                             
                             Button(action: {
-                                onAITap()
+                                if isInAIMode {
+                                    onExitAI()
+                                    dismiss()
+                                } else {
+                                    onAITap()
+                                }
                             }) {
                                 HStack {
                                     Text("🎨 AI生成")
                                         .font(.headline)
                                     Spacer()
-                                    Image(systemName: "sparkles")
+                                    Image(systemName: isInAIMode ? "xmark.circle" : "sparkles")
                                         .foregroundColor(.orange)
                                 }
                                 .padding()
@@ -145,6 +152,8 @@ struct IconTypeCard: View {
 #Preview {
     IconSelectorView(
         selectedType: .constant(.calculator),
-        onAITap: { }
+        onAITap: { },
+        isInAIMode: false,
+        onExitAI: { }
     )
 }
