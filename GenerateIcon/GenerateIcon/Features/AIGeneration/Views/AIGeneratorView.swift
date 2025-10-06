@@ -277,47 +277,15 @@ struct AIGeneratorView: View {
     }
     
     // MARK: - 生成预览图标
-    private func generatePreviewIcon() -> UIImage? {
-        let size = CGSize(width: 256, height: 256)
+    private func generatePreviewIcon() async -> UIImage? {
+        // 使用与AI生成器完全相同的逻辑
+        let aiService = LocalAIService()
         
-        return UIGraphicsImageRenderer(size: size).image { context in
-            let cgContext = context.cgContext
-            
-            // 创建渐变背景
-            let colors = [UIColor.blue.cgColor, UIColor.purple.cgColor]
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
-            
-            cgContext.drawLinearGradient(
-                gradient,
-                start: CGPoint(x: 0, y: 0),
-                end: CGPoint(x: size.width, y: size.height),
-                options: []
-            )
-            
-            // 绘制文字
-            let fontSize = aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size
-            let font = UIFont(name: aiSettings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-            
-            let text = previewText.isEmpty ? "MYAPP" : previewText
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: UIColor(aiSettings.textColor.color),
-                .strokeColor: UIColor.black,
-                .strokeWidth: -2
-            ]
-            
-            let textSize = text.size(withAttributes: attributes)
-            let textRect = CGRect(
-                x: (size.width - textSize.width) / 2,
-                y: (size.height - textSize.height) / 2,
-                width: textSize.width,
-                height: textSize.height
-            )
-            
-            // 添加阴影
-            cgContext.setShadow(offset: CGSize(width: 2, height: 2), blur: 4, color: UIColor.black.withAlphaComponent(0.3).cgColor)
-            
-            text.draw(in: textRect, withAttributes: attributes)
+        do {
+            return try await aiService.generateIcon(prompt: prompt, settings: aiSettings)
+        } catch {
+            print("预览生成失败: \(error)")
+            return nil
         }
     }
     
@@ -350,7 +318,12 @@ struct AIGeneratorView: View {
     }
     
     private func updatePreview() {
-        previewIcon = generatePreviewIcon()
+        Task {
+            let newIcon = await generatePreviewIcon()
+            await MainActor.run {
+                previewIcon = newIcon
+            }
+        }
     }
     
     private func hideKeyboard() {
