@@ -111,7 +111,8 @@ struct IconGeneratorView: View {
                     if geometry.size.width > 1000 {
                         SettingsPanelView(
                             settings: $viewModel.settings,
-                            isVisible: $showingSettings
+                            isVisible: $showingSettings,
+                            currentIconType: selectedIconType
                         )
                         .frame(width: 300)
                     }
@@ -132,6 +133,7 @@ struct IconGeneratorView: View {
                 SettingsPanelView(
                     settings: $viewModel.settings,
                     isVisible: $showingSettings,
+                    currentIconType: selectedIconType,
                     onSettingsChanged: {
                         // 设置变化时立即触发预览刷新
                         print("🔄 Settings changed, refreshing preview")
