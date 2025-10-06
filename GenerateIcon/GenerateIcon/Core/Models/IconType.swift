@@ -192,7 +192,7 @@ enum IconCategory: String, CaseIterable, Identifiable {
 }
 
 // MARK: - 背景形状枚举
-enum BackgroundShape: String, CaseIterable, Identifiable, Codable {
+enum BackgroundShape: String, CaseIterable, Identifiable, Codable, Equatable {
     case circle = "circle"
     case rounded = "rounded"
     case square = "square"

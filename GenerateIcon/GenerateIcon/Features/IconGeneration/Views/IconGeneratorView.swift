@@ -131,8 +131,18 @@ struct IconGeneratorView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsPanelView(
                     settings: $viewModel.settings,
-                    isVisible: $showingSettings
+                    isVisible: $showingSettings,
+                    onSettingsChanged: {
+                        // 设置变化时立即触发预览刷新
+                        print("🔄 Settings changed, refreshing preview")
+                        viewModel.refreshPreview()
+                    }
                 )
+                .onDisappear {
+                    // 设置面板关闭时也触发预览刷新
+                    print("🔄 Settings panel closed, refreshing preview")
+                    viewModel.refreshPreview()
+                }
             }
         }
         .sheet(isPresented: $showingSizeSelection) {

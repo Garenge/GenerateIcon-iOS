@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsPanelView: View {
     @Binding var settings: IconSettings
     @Binding var isVisible: Bool
+    var onSettingsChanged: (() -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -39,6 +40,10 @@ struct SettingsPanelView: View {
         .background(Color(.systemGroupedBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
+        .onChange(of: settings) { _ in
+            // 设置变化时立即触发预览更新
+            onSettingsChanged?()
+        }
     }
     
     // MARK: - 图标外框设置
@@ -206,7 +211,10 @@ struct ShapePickerSetting: View {
 #Preview {
     SettingsPanelView(
         settings: .constant(IconSettings()),
-        isVisible: .constant(true)
+        isVisible: .constant(true),
+        onSettingsChanged: {
+            print("Settings changed in preview")
+        }
     )
     .frame(width: 300, height: 600)
 }
