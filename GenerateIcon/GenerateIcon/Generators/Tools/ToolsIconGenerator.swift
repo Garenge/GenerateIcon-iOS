@@ -166,34 +166,39 @@ class ToolsIconGenerator: BaseIconGenerator {
         // 心形图标
         let heartSize = iconSize * 0.8
         let heartWidth = heartSize
-        let heartHeight = heartSize * 0.8
+        let heartHeight = heartSize * 0.9
         
         // 设置心形颜色
         context.setFillColor(UIColor.systemRed.cgColor)
         
-        // 绘制心形路径
+        // 绘制心形路径 - 使用贝塞尔曲线创建更自然的形状
         let heartPath = CGMutablePath()
         
-        // 心形的上半部分（两个圆形）
-        let topRadius = heartWidth * 0.25
-        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.5, y: centerY - heartHeight * 0.15)
-        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.5, y: centerY - heartHeight * 0.15)
+        // 心形的关键点
+        let topRadius = heartWidth * 0.3
+        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.6, y: centerY - heartHeight * 0.1)
+        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.6, y: centerY - heartHeight * 0.1)
         
-        // 左圆
-        heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
+        // 心形底部点
+        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.4)
         
-        // 右圆
-        heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
+        // 开始绘制心形路径
+        // 从左侧圆形开始
+        heartPath.move(to: CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius))
         
-        // 心形的下半部分（倒三角形，形成爱心的尖端）
-        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.25)
-        let leftBottomPoint = CGPoint(x: centerX - heartWidth * 0.3, y: centerY - heartHeight * 0.05)
-        let rightBottomPoint = CGPoint(x: centerX + heartWidth * 0.3, y: centerY - heartHeight * 0.05)
+        // 左半圆
+        heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: .pi / 2, endAngle: .pi * 3 / 2, clockwise: false)
         
-        // 添加倒三角形路径
-        heartPath.move(to: bottomPoint)
-        heartPath.addLine(to: leftBottomPoint)
-        heartPath.addLine(to: rightBottomPoint)
+        // 连接到右半圆
+        heartPath.addLine(to: CGPoint(x: rightTopCenter.x - topRadius, y: rightTopCenter.y))
+        
+        // 右半圆
+        heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: .pi * 3 / 2, endAngle: .pi / 2, clockwise: false)
+        
+        // 连接到心形底部
+        heartPath.addLine(to: bottomPoint)
+        
+        // 闭合路径
         heartPath.closeSubpath()
         
         // 填充心形
