@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - AI生成器视图
 struct AIGeneratorView: View {
@@ -9,6 +10,7 @@ struct AIGeneratorView: View {
     @State private var aiSettings = AISettings()
     @State private var showingTextSettings = false
     @State private var previewText = "MYAPP"
+    @State private var previewIcon: UIImage?
     
     @Environment(\.dismiss) private var dismiss
     
@@ -42,6 +44,24 @@ struct AIGeneratorView: View {
             .onTapGesture {
                 // 点击空白处收起键盘
                 hideKeyboard()
+            }
+            .onAppear {
+                updatePreview()
+            }
+            .onChange(of: previewText) { _ in
+                updatePreview()
+            }
+            .onChange(of: aiSettings.fontSize) { _ in
+                updatePreview()
+            }
+            .onChange(of: aiSettings.customFontSize) { _ in
+                updatePreview()
+            }
+            .onChange(of: aiSettings.fontFamily) { _ in
+                updatePreview()
+            }
+            .onChange(of: aiSettings.textColor) { _ in
+                updatePreview()
             }
         }
     }
@@ -242,18 +262,62 @@ struct AIGeneratorView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
             
-            // 使用封装的文字预览组件
-            TextPreviewComponent(
-                config: TextPreviewConfig(
-                    text: previewText,
-                    fontSize: aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size,
-                    fontName: aiSettings.fontFamily,
-                    textColor: aiSettings.textColor.color,
-                    backgroundColor: .blue,
-                    previewSize: CGSize(width: 120, height: 120),
+            // 使用IconPreviewComponent来预览AI生成效果，确保与首页一致
+            IconPreviewComponent(
+                config: IconPreviewConfig(
+                    iconType: .heart, // 使用一个默认图标类型
+                    settings: IconSettings(), // 使用默认设置
+                    isLoading: false,
+                    customIcon: previewIcon, // 使用状态变量
+                    previewSize: CGSize(width: 256, height: 256), // 与首页统一尺寸
                     showPreviewInfo: false
                 )
             )
+        }
+    }
+    
+    // MARK: - 生成预览图标
+    private func generatePreviewIcon() -> UIImage? {
+        let size = CGSize(width: 256, height: 256)
+        
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let cgContext = context.cgContext
+            
+            // 创建渐变背景
+            let colors = [UIColor.blue.cgColor, UIColor.purple.cgColor]
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+            
+            cgContext.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: 0, y: 0),
+                end: CGPoint(x: size.width, y: size.height),
+                options: []
+            )
+            
+            // 绘制文字
+            let fontSize = aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size
+            let font = UIFont(name: aiSettings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+            
+            let text = previewText.isEmpty ? "MYAPP" : previewText
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor(aiSettings.textColor.color),
+                .strokeColor: UIColor.black,
+                .strokeWidth: -2
+            ]
+            
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (size.width - textSize.width) / 2,
+                y: (size.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            
+            // 添加阴影
+            cgContext.setShadow(offset: CGSize(width: 2, height: 2), blur: 4, color: UIColor.black.withAlphaComponent(0.3).cgColor)
+            
+            text.draw(in: textRect, withAttributes: attributes)
         }
     }
     
@@ -283,6 +347,10 @@ struct AIGeneratorView: View {
             let firstWord = words.first?.uppercased() ?? "MYAPP"
             previewText = String(firstWord.prefix(aiSettings.maxLength))
         }
+    }
+    
+    private func updatePreview() {
+        previewIcon = generatePreviewIcon()
     }
     
     private func hideKeyboard() {
