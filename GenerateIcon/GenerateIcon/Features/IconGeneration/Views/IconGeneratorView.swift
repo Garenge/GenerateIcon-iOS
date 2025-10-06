@@ -30,16 +30,16 @@ struct IconGeneratorView: View {
                                 showingIconSelector = true
                             }) {
                                 HStack {
-                                    Text(selectedIconType.displayName)
+                                    Text(viewModel.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
                                         .font(.headline)
                                     Spacer()
                                     Image(systemName: "chevron.down")
                                 }
                                 .padding()
-                                .background(Color.blue.opacity(0.1))
+                                .background(viewModel.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
                                 .cornerRadius(8)
                             }
-                            .foregroundColor(.blue)
+                            .foregroundColor(viewModel.isInAIMode ? .orange : .blue)
                         }
                         
                         // 预览区域
@@ -181,10 +181,8 @@ struct IconGeneratorView: View {
             print("🔄 IconGeneratorView: Icon type changed to: \(newType.name)")
             // 清除AI生成的图标，切换到预设图标预览
             viewModel.clearAIIcon()
-            // 强制触发UI更新
-            DispatchQueue.main.async {
-                viewModel.refreshPreview()
-            }
+            // 立即触发UI更新，不延迟
+            viewModel.refreshPreview()
         }
         .onAppear {
             viewModel.loadSettings()

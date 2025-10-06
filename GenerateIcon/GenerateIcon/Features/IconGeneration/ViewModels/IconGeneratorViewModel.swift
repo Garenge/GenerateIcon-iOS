@@ -11,6 +11,7 @@ class IconGeneratorViewModel: ObservableObject {
     @Published var pendingImage: UIImage?
     @Published var lastGeneratedIcon: UIImage?
     @Published var errorMessage: String?
+    @Published var isInAIMode = false // 添加AI模式状态
     
     private let iconGeneratorService = IconGeneratorService()
     private let fileManagerService = FileManagerService()
@@ -61,6 +62,7 @@ class IconGeneratorViewModel: ObservableObject {
             isGenerating = true
             generationProgress = 0.0
             errorMessage = nil
+            isInAIMode = true // 设置为AI模式
         }
         
         // 显示AI生成开始的Toast
@@ -94,6 +96,7 @@ class IconGeneratorViewModel: ObservableObject {
     // MARK: - 清除AI图标
     func clearAIIcon() {
         lastGeneratedIcon = nil
+        isInAIMode = false // 退出AI模式
     }
     
     // MARK: - 生成预览
