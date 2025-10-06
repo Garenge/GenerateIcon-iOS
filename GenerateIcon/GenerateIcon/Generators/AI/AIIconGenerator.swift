@@ -740,7 +740,7 @@ class LocalAIService: AIService {
     
     private func drawHeartIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
         // 全新的爱心绘制方法 - 使用数学心形公式
-        let heartSize = size * 0.9  // 增大爱心尺寸
+        let heartSize = size * 1.17  // 增大爱心尺寸 (0.9 * 1.3 = 1.17)
         let scale = heartSize / 100.0 // 标准化缩放
         
         // 设置爱心颜色
