@@ -163,53 +163,46 @@ class ToolsIconGenerator: BaseIconGenerator {
         let centerY = size.height / 2
         let iconSize = min(size.width, size.height) * 0.6
         
-        // 心形图标 - 使用更标准的心形绘制方法
-        let heartSize = iconSize * 0.7
-        let heartWidth = heartSize
-        let heartHeight = heartSize * 0.9
+        // 全新的爱心绘制方法 - 使用数学心形公式
+        let heartSize = iconSize * 0.8
+        let scale = heartSize / 100.0 // 标准化缩放
         
-        // 设置心形颜色
+        // 设置爱心颜色
         context.setFillColor(UIColor.systemRed.cgColor)
         
-        // 绘制心形路径 - 使用贝塞尔曲线绘制标准心形
+        // 使用数学心形公式绘制
         let heartPath = CGMutablePath()
         
-        // 心形的关键点
-        let topRadius = heartWidth * 0.3
-        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.6, y: centerY - heartHeight * 0.15)
-        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.6, y: centerY - heartHeight * 0.15)
+        // 心形参数
+        let tStep: CGFloat = 0.1
+        var firstPoint = true
         
-        // 心形底部点
-        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.4)
-        
-        // 开始绘制心形路径
-        // 从左侧圆形底部开始
-        let leftBottom = CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius)
-        heartPath.move(to: leftBottom)
-        
-        // 左半圆 (下半部分)
-        heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: .pi / 2, endAngle: .pi * 3 / 2, clockwise: false)
-        
-        // 连接到右半圆
-        let rightBottom = CGPoint(x: rightTopCenter.x, y: rightTopCenter.y + topRadius)
-        heartPath.addLine(to: rightBottom)
-        
-        // 右半圆 (下半部分)
-        heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: .pi * 3 / 2, endAngle: .pi / 2, clockwise: false)
-        
-        // 连接到心形底部 - 使用贝塞尔曲线创建平滑的底部
-        let controlPoint1 = CGPoint(x: centerX - heartWidth * 0.1, y: centerY + heartHeight * 0.2)
-        let controlPoint2 = CGPoint(x: centerX + heartWidth * 0.1, y: centerY + heartHeight * 0.2)
-        heartPath.addCurve(to: bottomPoint, control1: controlPoint1, control2: controlPoint2)
+        // 使用参数方程绘制心形
+        for t in stride(from: CGFloat(0), to: CGFloat(2 * CGFloat.pi), by: tStep) {
+            // 心形参数方程
+            let x = 16 * pow(sin(t), 3)
+            let y = -(13 * cos(t) - 5 * cos(2*t) - 2 * cos(3*t) - cos(4*t))
+            
+            // 转换到实际坐标
+            let actualX = centerX + x * scale
+            let actualY = centerY + y * scale
+            
+            if firstPoint {
+                heartPath.move(to: CGPoint(x: actualX, y: actualY))
+                firstPoint = false
+            } else {
+                heartPath.addLine(to: CGPoint(x: actualX, y: actualY))
+            }
+        }
         
         // 闭合路径
         heartPath.closeSubpath()
         
-        // 填充心形
+        // 填充爱心
         context.addPath(heartPath)
         context.fillPath()
         
-        // 添加心形边框
+        // 添加爱心边框
         context.setStrokeColor(UIColor.systemRed.withAlphaComponent(0.8).cgColor)
         context.setLineWidth(2)
         context.addPath(heartPath)
