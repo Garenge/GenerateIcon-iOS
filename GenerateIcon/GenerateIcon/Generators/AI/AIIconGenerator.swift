@@ -739,25 +739,27 @@ class LocalAIService: AIService {
     }
     
     private func drawHeartIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
-        let heartSize = size * 0.4
+        // 心形图标 - 使用更标准的心形绘制方法
+        let heartSize = size * 0.7
         let heartWidth = heartSize
-        let heartHeight = heartSize * 0.85
+        let heartHeight = heartSize * 0.9
         
         // 设置心形颜色
         context.setFillColor(UIColor.systemRed.cgColor)
         
-        // 绘制心形路径
+        // 绘制心形路径 - 使用贝塞尔曲线绘制标准心形
         let heartPath = CGMutablePath()
         
         // 心形的关键点
-        let topRadius = heartWidth * 0.25
-        let leftTopCenter = CGPoint(x: center.x - topRadius * 0.7, y: center.y - heartHeight * 0.2)
-        let rightTopCenter = CGPoint(x: center.x + topRadius * 0.7, y: center.y - heartHeight * 0.2)
+        let topRadius = heartWidth * 0.3
+        let leftTopCenter = CGPoint(x: center.x - topRadius * 0.6, y: center.y - heartHeight * 0.15)
+        let rightTopCenter = CGPoint(x: center.x + topRadius * 0.6, y: center.y - heartHeight * 0.15)
         
         // 心形底部点
-        let bottomPoint = CGPoint(x: center.x, y: center.y + heartHeight * 0.35)
+        let bottomPoint = CGPoint(x: center.x, y: center.y + heartHeight * 0.4)
         
         // 开始绘制心形路径
+        // 从左侧圆形底部开始
         let leftBottom = CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius)
         heartPath.move(to: leftBottom)
         
@@ -771,8 +773,10 @@ class LocalAIService: AIService {
         // 右半圆 (下半部分)
         heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: .pi * 3 / 2, endAngle: .pi / 2, clockwise: false)
         
-        // 连接到心形底部
-        heartPath.addLine(to: bottomPoint)
+        // 连接到心形底部 - 使用贝塞尔曲线创建平滑的底部
+        let controlPoint1 = CGPoint(x: center.x - heartWidth * 0.1, y: center.y + heartHeight * 0.2)
+        let controlPoint2 = CGPoint(x: center.x + heartWidth * 0.1, y: center.y + heartHeight * 0.2)
+        heartPath.addCurve(to: bottomPoint, control1: controlPoint1, control2: controlPoint2)
         
         // 闭合路径
         heartPath.closeSubpath()
