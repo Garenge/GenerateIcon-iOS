@@ -44,30 +44,11 @@ struct IconPreviewComponent: View {
                     }
                 } else if let customIcon = config.customIcon {
                     // AI生成的图标
-                    VStack(spacing: 12) {
-                        Image(uiImage: customIcon)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: config.previewSize.width * 0.8, height: config.previewSize.height * 0.8)
-                            .cornerRadius(8)
-                        
-                        if config.showRegenerateButton {
-                            Button(action: {
-                                config.onRegenerate?()
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.clockwise")
-                                    Text("重新生成")
-                                }
-                                .font(.caption)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
-                                .cornerRadius(6)
-                            }
-                        }
-                    }
+                    Image(uiImage: customIcon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: config.previewSize.width * 0.8, height: config.previewSize.height * 0.8)
+                        .cornerRadius(8)
                 } else if let previewImage = previewImage {
                     // 预设图标
                     Image(uiImage: previewImage)
@@ -85,6 +66,24 @@ struct IconPreviewComponent: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                }
+            }
+            
+            // 重新生成按钮（AI图标时显示）
+            if config.customIcon != nil && config.showRegenerateButton {
+                Button(action: {
+                    config.onRegenerate?()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.clockwise")
+                        Text("重新生成")
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(6)
                 }
             }
             

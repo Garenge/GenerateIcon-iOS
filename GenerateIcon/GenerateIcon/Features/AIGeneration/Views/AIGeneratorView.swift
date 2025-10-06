@@ -14,22 +14,22 @@ struct AIGeneratorView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                // 提示词输入
-                promptInputSection
-                
-                // 示例标签
-                examplesSection
-                
-                // 文字设置模块
-                textSettingsSection
-                
-                Spacer()
-                
-                // 操作按钮
-                actionButtons
+            ScrollView {
+                VStack(spacing: 24) {
+                    // 提示词输入
+                    promptInputSection
+                    
+                    // 示例标签
+                    examplesSection
+                    
+                    // 文字设置模块
+                    textSettingsSection
+                    
+                    // 操作按钮
+                    actionButtons
+                }
+                .padding()
             }
-            .padding()
             .navigationTitle("🎨 AI图标生成")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
