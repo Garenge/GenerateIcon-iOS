@@ -87,6 +87,7 @@ struct IconSelectorView: View {
                             }
                             .foregroundColor(.orange)
                             .padding(.horizontal)
+                            .id("ai-button") // 添加ID用于滚动定位
                         }
                     }
                     .padding(.vertical)
@@ -95,15 +96,22 @@ struct IconSelectorView: View {
                     // 延迟滚动，确保视图已经渲染完成
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         if !hasScrolled {
-                            // 首先尝试滚动到选中的图标
-                            withAnimation(.easeInOut(duration: 0.5)) {
-                                proxy.scrollTo(selectedType.id, anchor: .center)
-                            }
-                            
-                            // 如果选中的图标不在当前分类中，滚动到对应的分类
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    proxy.scrollTo(selectedType.category.id, anchor: .top)
+                            if isInAIMode {
+                                // AI模式下滚动到AI按钮位置
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    proxy.scrollTo("ai-button", anchor: .center)
+                                }
+                            } else {
+                                // 预设模式下滚动到选中的图标
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    proxy.scrollTo(selectedType.id, anchor: .center)
+                                }
+                                
+                                // 如果选中的图标不在当前分类中，滚动到对应的分类
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        proxy.scrollTo(selectedType.category.id, anchor: .top)
+                                    }
                                 }
                             }
                             hasScrolled = true
