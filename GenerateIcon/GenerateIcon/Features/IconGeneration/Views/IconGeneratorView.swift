@@ -50,41 +50,31 @@ struct IconGeneratorView: View {
                         
                         // 预览区域
                         if let aiIcon = viewModel.lastGeneratedIcon {
-                            VStack(spacing: 12) {
-                                Text("🎨 AI生成的图标")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemGray6))
-                                        .frame(width: 256, height: 256)
-                                    
-                                    Image(uiImage: aiIcon)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 240, height: 240)
-                                        .cornerRadius(12)
-                                        .animation(.easeInOut(duration: 0.3), value: aiIcon)
-                                }
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                            IconPreviewComponent(
+                                config: IconPreviewConfig(
+                                    iconType: selectedIconType,
+                                    settings: viewModel.settings,
+                                    isLoading: viewModel.isGenerating,
+                                    errorMessage: viewModel.errorMessage,
+                                    customIcon: aiIcon,
+                                    showRegenerateButton: true,
+                                    onRegenerate: {
+                                        showingAIModal = true
+                                    },
+                                    previewSize: CGSize(width: 256, height: 256),
+                                    showPreviewInfo: true
                                 )
-                                
-                                Text("AI生成结果")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
-                                Button("重新生成") {
-                                    showingAIModal = true
-                                }
-                                .buttonStyle(.bordered)
-                            }
+                            )
                         } else {
-                            IconPreviewView(
-                                iconType: selectedIconType,
-                                settings: viewModel.settings
+                            IconPreviewComponent(
+                                config: IconPreviewConfig(
+                                    iconType: selectedIconType,
+                                    settings: viewModel.settings,
+                                    isLoading: viewModel.isGenerating,
+                                    errorMessage: viewModel.errorMessage,
+                                    previewSize: CGSize(width: 256, height: 256),
+                                    showPreviewInfo: true
+                                )
                             )
                         }
                         

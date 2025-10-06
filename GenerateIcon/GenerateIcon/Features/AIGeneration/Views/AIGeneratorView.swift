@@ -242,30 +242,18 @@ struct AIGeneratorView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
             
-            HStack {
-                // 预览画布
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray5))
-                        .frame(width: 120, height: 120)
-                    
-                    Text(previewText)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(aiSettings.textColor.color)
-                        .multilineTextAlignment(.center)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(previewText)
-                        .font(.headline)
-                    
-                    Text("字体: \(aiSettings.fontFamily), 大小: \(Int(aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size))px, 样式: \(aiSettings.textStyle.name)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-            }
+            // 使用封装的文字预览组件
+            TextPreviewComponent(
+                config: TextPreviewConfig(
+                    text: previewText,
+                    fontSize: aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size,
+                    fontName: aiSettings.fontFamily,
+                    textColor: aiSettings.textColor.color,
+                    backgroundColor: .blue,
+                    previewSize: CGSize(width: 120, height: 120),
+                    showPreviewInfo: false
+                )
+            )
         }
     }
     
