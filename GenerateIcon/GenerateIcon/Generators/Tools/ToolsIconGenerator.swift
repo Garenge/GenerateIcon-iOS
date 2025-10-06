@@ -164,7 +164,7 @@ class ToolsIconGenerator: BaseIconGenerator {
         let iconSize = min(size.width, size.height) * 0.6
         
         // 全新的爱心绘制方法 - 使用数学心形公式
-        let heartSize = iconSize * 0.8
+        let heartSize = iconSize * 0.9  // 增大爱心尺寸
         let scale = heartSize / 100.0 // 标准化缩放
         
         // 设置爱心颜色
