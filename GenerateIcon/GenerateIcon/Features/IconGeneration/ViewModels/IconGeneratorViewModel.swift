@@ -91,6 +91,11 @@ class IconGeneratorViewModel: ObservableObject {
         }
     }
     
+    // MARK: - 清除AI图标
+    func clearAIIcon() {
+        lastGeneratedIcon = nil
+    }
+    
     // MARK: - 生成预览
     func generatePreview(
         type: IconType,

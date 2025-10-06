@@ -179,6 +179,8 @@ struct IconGeneratorView: View {
         .onChange(of: selectedIconType) { newType in
             // 图标类型改变时刷新预览
             print("🔄 IconGeneratorView: Icon type changed to: \(newType.name)")
+            // 清除AI生成的图标，切换到预设图标预览
+            viewModel.clearAIIcon()
             // 强制触发UI更新
             DispatchQueue.main.async {
                 viewModel.refreshPreview()
