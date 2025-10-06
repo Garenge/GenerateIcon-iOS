@@ -143,18 +143,18 @@ class IconGeneratorService: ObservableObject {
         
         // 通信图标
         case .phone, .email, .message, .video:
-            print("🔧 Using CommunicationIconGenerator")
-            return CommunicationIconGenerator()
+            print("🔧 Using CommunicationIconGenerator for \(type.name)")
+            return CommunicationIconGenerator(iconType: type)
         
         // 媒体图标
         case .music, .camera, .photo, .videoPlayer:
-            print("🔧 Using MediaIconGenerator")
-            return MediaIconGenerator()
+            print("🔧 Using MediaIconGenerator for \(type.name)")
+            return MediaIconGenerator(iconType: type)
         
         // 工具图标
         case .settings, .search, .heart, .star:
-            print("🔧 Using ToolsIconGenerator")
-            return ToolsIconGenerator()
+            print("🔧 Using ToolsIconGenerator for \(type.name)")
+            return ToolsIconGenerator(iconType: type)
         
         // AI生成
         case .custom:

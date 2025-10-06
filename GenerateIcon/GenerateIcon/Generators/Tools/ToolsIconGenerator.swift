@@ -4,6 +4,12 @@ import UIKit
 
 // MARK: - 工具图标生成器
 class ToolsIconGenerator: BaseIconGenerator {
+    private let iconType: IconType
+    
+    init(iconType: IconType) {
+        self.iconType = iconType
+        super.init()
+    }
     
     override func generateIcon(size: CGSize, settings: IconSettings) async throws -> UIImage {
         return try await withCheckedThrowingContinuation { continuation in
@@ -29,12 +35,23 @@ class ToolsIconGenerator: BaseIconGenerator {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
-            // 绘制工具图标
-            drawToolsIcon(in: cgContext, size: size)
+            // 根据图标类型绘制不同的工具图标
+            switch iconType {
+            case .settings:
+                drawSettingsIcon(in: cgContext, size: size)
+            case .search:
+                drawSearchIcon(in: cgContext, size: size)
+            case .heart:
+                drawHeartIcon(in: cgContext, size: size)
+            case .star:
+                drawStarIcon(in: cgContext, size: size)
+            default:
+                drawSettingsIcon(in: cgContext, size: size)
+            }
         }
     }
     
-    private func drawToolsIcon(in context: CGContext, size: CGSize) {
+    private func drawSettingsIcon(in context: CGContext, size: CGSize) {
         let centerX = size.width / 2
         let centerY = size.height / 2
         let iconSize = min(size.width, size.height) * 0.6
@@ -89,6 +106,143 @@ class ToolsIconGenerator: BaseIconGenerator {
             context.move(to: CGPoint(x: startX, y: startY))
             context.addLine(to: CGPoint(x: endX, y: endY))
         }
+        context.strokePath()
+    }
+    
+    private func drawSearchIcon(in context: CGContext, size: CGSize) {
+        let centerX = size.width / 2
+        let centerY = size.height / 2
+        let iconSize = min(size.width, size.height) * 0.6
+        
+        // 放大镜
+        let magnifierSize = iconSize * 0.6
+        let magnifierRect = CGRect(
+            x: centerX - magnifierSize * 0.5,
+            y: centerY - magnifierSize * 0.5,
+            width: magnifierSize,
+            height: magnifierSize
+        )
+        
+        // 放大镜边框
+        context.setStrokeColor(UIColor.systemBlue.cgColor)
+        context.setLineWidth(4)
+        context.strokeEllipse(in: magnifierRect)
+        
+        // 放大镜手柄
+        let handleLength = magnifierSize * 0.4
+        let handleStartX = magnifierRect.maxX - magnifierSize * 0.2
+        let handleStartY = magnifierRect.maxY - magnifierSize * 0.2
+        let handleEndX = handleStartX + handleLength * 0.7
+        let handleEndY = handleStartY + handleLength * 0.7
+        
+        context.setStrokeColor(UIColor.systemBlue.cgColor)
+        context.setLineWidth(4)
+        context.move(to: CGPoint(x: handleStartX, y: handleStartY))
+        context.addLine(to: CGPoint(x: handleEndX, y: handleEndY))
+        context.strokePath()
+        
+        // 搜索内容（小圆点）
+        let dotSize: CGFloat = 3
+        let dotSpacing: CGFloat = 6
+        let startX = magnifierRect.minX + magnifierSize * 0.2
+        let startY = magnifierRect.minY + magnifierSize * 0.2
+        
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        for i in 0..<2 {
+            for j in 0..<2 {
+                let dotX = startX + CGFloat(j) * dotSpacing
+                let dotY = startY + CGFloat(i) * dotSpacing
+                let dotRect = CGRect(x: dotX - dotSize/2, y: dotY - dotSize/2, width: dotSize, height: dotSize)
+                context.fillEllipse(in: dotRect)
+            }
+        }
+    }
+    
+    private func drawHeartIcon(in context: CGContext, size: CGSize) {
+        let centerX = size.width / 2
+        let centerY = size.height / 2
+        let iconSize = min(size.width, size.height) * 0.6
+        
+        // 心形图标
+        let heartSize = iconSize * 0.8
+        let heartRect = CGRect(
+            x: centerX - heartSize * 0.5,
+            y: centerY - heartSize * 0.5,
+            width: heartSize,
+            height: heartSize
+        )
+        
+        // 绘制心形
+        context.setFillColor(UIColor.systemRed.cgColor)
+        
+        // 心形的两个圆形部分
+        let circleRadius = heartSize * 0.25
+        let leftCircleCenter = CGPoint(x: centerX - circleRadius * 0.5, y: centerY - circleRadius * 0.2)
+        let rightCircleCenter = CGPoint(x: centerX + circleRadius * 0.5, y: centerY - circleRadius * 0.2)
+        
+        context.fillEllipse(in: CGRect(
+            x: leftCircleCenter.x - circleRadius,
+            y: leftCircleCenter.y - circleRadius,
+            width: circleRadius * 2,
+            height: circleRadius * 2
+        ))
+        
+        context.fillEllipse(in: CGRect(
+            x: rightCircleCenter.x - circleRadius,
+            y: rightCircleCenter.y - circleRadius,
+            width: circleRadius * 2,
+            height: circleRadius * 2
+        ))
+        
+        // 心形的三角形部分
+        let triangleHeight = heartSize * 0.3
+        let triangleWidth = heartSize * 0.6
+        
+        context.move(to: CGPoint(x: centerX, y: centerY + triangleHeight * 0.5))
+        context.addLine(to: CGPoint(x: centerX - triangleWidth * 0.5, y: centerY - triangleHeight * 0.5))
+        context.addLine(to: CGPoint(x: centerX + triangleWidth * 0.5, y: centerY - triangleHeight * 0.5))
+        context.closePath()
+        context.fillPath()
+    }
+    
+    private func drawStarIcon(in context: CGContext, size: CGSize) {
+        let centerX = size.width / 2
+        let centerY = size.height / 2
+        let iconSize = min(size.width, size.height) * 0.6
+        
+        // 五角星图标
+        let starSize = iconSize * 0.8
+        let outerRadius = starSize * 0.4
+        let innerRadius = outerRadius * 0.4
+        
+        context.setFillColor(UIColor.systemYellow.cgColor)
+        
+        // 绘制五角星
+        let points = 5
+        let angleStep = 2 * .pi / CGFloat(points)
+        
+        context.move(to: CGPoint(x: centerX, y: centerY - outerRadius))
+        
+        for i in 0..<points {
+            let outerAngle = CGFloat(i) * angleStep - .pi / 2
+            let innerAngle = outerAngle + angleStep / 2
+            
+            let outerX = centerX + cos(outerAngle) * outerRadius
+            let outerY = centerY + sin(outerAngle) * outerRadius
+            
+            let innerX = centerX + cos(innerAngle) * innerRadius
+            let innerY = centerY + sin(innerAngle) * innerRadius
+            
+            context.addLine(to: CGPoint(x: outerX, y: outerY))
+            context.addLine(to: CGPoint(x: innerX, y: innerY))
+        }
+        
+        context.closePath()
+        context.fillPath()
+        
+        // 星星边框
+        context.setStrokeColor(UIColor.systemOrange.cgColor)
+        context.setLineWidth(2)
         context.strokePath()
     }
 }

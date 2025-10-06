@@ -161,12 +161,15 @@ class LocalAIService: AIService {
     }
     
     private func drawText(in context: CGContext, text: String, size: CGSize, settings: AISettings) {
-        let fontSize = settings.fontSize.size
+        let fontSize = settings.fontSize == .custom ? (settings.customFontSize ?? 100) : settings.fontSize.size
         let font = UIFont(name: settings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        
+        // 将SwiftUI Color转换为UIColor
+        let uiColor = UIColor(settings.textColor.color)
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: settings.textColor.color
+            .foregroundColor: uiColor
         ]
         
         let textSize = text.size(withAttributes: attributes)

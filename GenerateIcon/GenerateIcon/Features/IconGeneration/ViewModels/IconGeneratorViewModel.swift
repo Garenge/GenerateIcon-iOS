@@ -33,6 +33,9 @@ class IconGeneratorViewModel: ObservableObject {
             errorMessage = nil
         }
         
+        // 显示开始生成的Toast
+        HUDToastManager.shared.showToast(message: "开始生成图标...", type: .info, duration: 1.5)
+        
         do {
             if downloadType == .ios {
                 try await generateIOSIconSet(type: type, settings: settings)
@@ -44,6 +47,8 @@ class IconGeneratorViewModel: ObservableObject {
                 self.errorMessage = error.localizedDescription
                 self.isGenerating = false
             }
+            // 显示错误Toast
+            HUDToastManager.shared.showErrorToast(message: "生成失败：\(error.localizedDescription)")
         }
     }
     
@@ -58,6 +63,9 @@ class IconGeneratorViewModel: ObservableObject {
             errorMessage = nil
         }
         
+        // 显示AI生成开始的Toast
+        HUDToastManager.shared.showToast(message: "AI正在生成图标...", type: .info, duration: 2.0)
+        
         do {
             let aiService = LocalAIService()
             let image = try await aiService.generateIcon(prompt: prompt, settings: settings)
@@ -70,11 +78,16 @@ class IconGeneratorViewModel: ObservableObject {
             // 保存到相册
             try await fileManagerService.saveToPhotoLibrary(image)
             
+            // 显示成功Toast
+            HUDToastManager.shared.showSuccessToast(message: "AI图标生成并保存成功！")
+            
         } catch {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
                 self.isGenerating = false
             }
+            // 显示错误Toast
+            HUDToastManager.shared.showErrorToast(message: "AI生成失败：\(error.localizedDescription)")
         }
     }
     
@@ -142,16 +155,23 @@ class IconGeneratorViewModel: ObservableObject {
     func confirmSaveToPhotoLibrary() async {
         guard let image = pendingImage else { return }
         
+        // 显示保存开始的Toast
+        HUDToastManager.shared.showToast(message: "正在保存到相册...", type: .info, duration: 1.5)
+        
         do {
             try await fileManagerService.saveToPhotoLibrary(image)
             await MainActor.run {
                 self.showingSaveConfirmation = false
                 self.pendingImage = nil
             }
+            // 显示成功Toast
+            HUDToastManager.shared.showSuccessToast(message: "图标已保存到相册！")
         } catch {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
             }
+            // 显示错误Toast
+            HUDToastManager.shared.showErrorToast(message: "保存失败：\(error.localizedDescription)")
         }
     }
     
@@ -161,10 +181,16 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     private func generateIOSIconSet(type: IconType, settings: IconSettings) async throws {
+        // 显示生成图标集的HUD
+        HUDToastManager.shared.showLoading(message: "正在生成iOS图标集...")
+        
         let urls = try await iconGeneratorService.generateIOSIconSet(
             type: type,
             settings: settings
         )
+        
+        // 更新进度并显示压缩包生成
+        HUDToastManager.shared.showProgress(progress: 0.7, message: "正在创建压缩包...")
         
         // 创建ZIP文件
         let zipURL = try await fileManagerService.createZipFile(icons: urls)
@@ -172,6 +198,10 @@ class IconGeneratorViewModel: ObservableObject {
         await MainActor.run {
             self.isGenerating = false
         }
+        
+        // 隐藏HUD并显示成功Toast
+        HUDToastManager.shared.hideHUD()
+        HUDToastManager.shared.showSuccessToast(message: "iOS图标集生成完成！")
         
         // 分享ZIP文件
         await shareFile(url: zipURL)
@@ -194,6 +224,17 @@ class IconGeneratorViewModel: ObservableObject {
                     popover.sourceView = window
                     popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                     popover.permittedArrowDirections = []
+                }
+                
+                // 添加分享完成回调
+                activityViewController.completionWithItemsHandler = { activityType, completed, returnedItems, error in
+                    DispatchQueue.main.async {
+                        if completed {
+                            HUDToastManager.shared.showSuccessToast(message: "文件分享成功！")
+                        } else if let error = error {
+                            HUDToastManager.shared.showErrorToast(message: "分享失败：\(error.localizedDescription)")
+                        }
+                    }
                 }
                 
                 rootViewController.present(activityViewController, animated: true)

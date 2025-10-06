@@ -44,6 +44,14 @@ struct SizeSelectionView: View {
                         let size = selectedDownloadType == .custom ? 
                             CGSize(width: selectedSize, height: selectedSize) : 
                             CGSize.zero
+                        
+                        // 显示开始生成的Toast
+                        if selectedDownloadType == .ios {
+                            HUDToastManager.shared.showToast(message: "开始生成iOS图标集...", type: .info, duration: 1.5)
+                        } else {
+                            HUDToastManager.shared.showToast(message: "开始生成 \(Int(selectedSize))px 图标...", type: .info, duration: 1.5)
+                        }
+                        
                         onGenerate(size, selectedDownloadType)
                         dismiss()
                     }
@@ -54,6 +62,7 @@ struct SizeSelectionView: View {
             .navigationTitle("选择尺寸")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .hudToast() // 添加HUD和Toast支持
     }
     
     // MARK: - 自定义尺寸内容
@@ -68,6 +77,9 @@ struct SizeSelectionView: View {
                     Button(action: {
                         selectedSize = preset.size
                         customSize = String(Int(preset.size))
+                        
+                        // 显示选择提示
+                        HUDToastManager.shared.showToast(message: "已选择 \(preset.name)", type: .info, duration: 1.0)
                     }) {
                         VStack {
                             Text(preset.name)

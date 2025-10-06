@@ -165,6 +165,7 @@ struct IconGeneratorView: View {
         } message: {
             Text("是否将生成的图标保存到相册？")
         }
+        .hudToast() // 添加HUD和Toast支持
     }
 }
 

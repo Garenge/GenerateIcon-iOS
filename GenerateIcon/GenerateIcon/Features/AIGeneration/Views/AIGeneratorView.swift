@@ -155,7 +155,7 @@ struct AIGeneratorView: View {
                                 if aiSettings.fontSize == .custom {
                                     TextField("像素", value: Binding(
                                         get: { aiSettings.customFontSize ?? 100 },
-                                        set: { aiSettings.customFontSize = CGFloat($0 ?? 100) }
+                                        set: { aiSettings.customFontSize = CGFloat(Double($0 ?? 100)) }
                                     ), format: .number)
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .frame(width: 80)
@@ -259,7 +259,7 @@ struct AIGeneratorView: View {
                     Text(previewText)
                         .font(.headline)
                     
-                    Text("字体: \(aiSettings.fontFamily), 大小: \(Int(aiSettings.fontSize.size))px, 样式: \(aiSettings.textStyle.name)")
+                    Text("字体: \(aiSettings.fontFamily), 大小: \(Int(aiSettings.fontSize == .custom ? (aiSettings.customFontSize ?? 100) : aiSettings.fontSize.size))px, 样式: \(aiSettings.textStyle.name)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
