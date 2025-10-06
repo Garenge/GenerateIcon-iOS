@@ -93,9 +93,9 @@ struct IconSelectorView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         if !hasScrolled {
                             if isInAIMode {
-                                // AI模式下滚动到AI按钮位置
+                                // AI模式下滚动到AI按钮位置（页面最底部）
                                 withAnimation(.easeInOut(duration: 0.5)) {
-                                    proxy.scrollTo("ai-button", anchor: .center)
+                                    proxy.scrollTo("ai-button", anchor: .bottom)
                                 }
                             } else {
                                 // 预设模式下滚动到选中的图标

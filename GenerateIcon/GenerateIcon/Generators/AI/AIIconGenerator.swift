@@ -130,13 +130,159 @@ class LocalAIService: AIService {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    let image = self.renderTextIcon(prompt: prompt, settings: settings)
+                    let image = self.renderSmartIcon(prompt: prompt, settings: settings)
                     continuation.resume(returning: image)
                 } catch {
                     continuation.resume(throwing: error)
                 }
             }
         }
+    }
+    
+    // MARK: - 智能图标生成
+    private func renderSmartIcon(prompt: String, settings: AISettings) -> UIImage {
+        let size = CGSize(width: 1024, height: 1024)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            
+            // 设置高质量渲染
+            cgContext.setShouldAntialias(true)
+            cgContext.setAllowsAntialiasing(true)
+            cgContext.interpolationQuality = .high
+            
+            // 尝试匹配关键词到现有图标
+            if let matchedIconType = matchKeywordsToIconType(prompt) {
+                // 绘制匹配的图标
+                drawMatchedIcon(in: cgContext, iconType: matchedIconType, size: size)
+            } else {
+                // 没有匹配到图标，显示文字
+                drawTextIcon(in: cgContext, text: prompt, size: size, settings: settings)
+            }
+        }
+    }
+    
+    // MARK: - 关键词匹配逻辑
+    private func matchKeywordsToIconType(_ prompt: String) -> IconType? {
+        let lowercasePrompt = prompt.lowercased()
+        
+        // 关键词映射表
+        let keywordMappings: [String: IconType] = [
+            // 基础图标
+            "计算器": .calculator, "calculator": .calculator, "计算": .calculator,
+            "鼠标": .mouse, "mouse": .mouse,
+            "键盘": .keyboard, "keyboard": .keyboard, "打字": .keyboard,
+            "显示器": .monitor, "monitor": .monitor, "屏幕": .monitor, "电脑": .monitor,
+            "定位": .location, "location": .location, "位置": .location, "地图": .location,
+            
+            // 办公图标
+            "文档": .document, "document": .document, "文件": .document, "text": .document,
+            "文件夹": .folder, "folder": .folder, "目录": .folder,
+            "打印机": .printer, "printer": .printer, "打印": .printer,
+            "日历": .calendar, "calendar": .calendar, "日期": .calendar, "时间": .calendar,
+            
+            // 通信图标
+            "电话": .phone, "phone": .phone, "通话": .phone, "call": .phone,
+            "邮件": .email, "email": .email, "邮箱": .email, "mail": .email,
+            "消息": .message, "message": .message, "聊天": .message, "chat": .message,
+            "视频": .video, "video": .video, "视频通话": .video, "videoCall": .video,
+            
+            // 媒体图标
+            "音乐": .music, "music": .music, "歌曲": .music, "audio": .music,
+            "相机": .camera, "camera": .camera, "拍照": .camera, "cameraPhoto": .camera,
+            "相册": .photo, "photo": .photo, "图片": .photo, "image": .photo,
+            "视频播放器": .videoPlayer, "videoPlayer": .videoPlayer, "播放器": .videoPlayer, "player": .videoPlayer,
+            
+            // 工具图标
+            "设置": .settings, "settings": .settings, "配置": .settings, "preference": .settings,
+            "搜索": .search, "search": .search, "查找": .search, "find": .search,
+            "收藏": .heart, "heart": .heart, "喜欢": .heart, "favorite": .heart, "爱心": .heart,
+            "评分": .star, "star": .star, "星星": .star, "rating": .star, "评价": .star
+        ]
+        
+        // 检查关键词匹配
+        for (keyword, iconType) in keywordMappings {
+            if lowercasePrompt.contains(keyword) {
+                return iconType
+            }
+        }
+        
+        return nil
+    }
+    
+    // MARK: - 绘制匹配的图标
+    private func drawMatchedIcon(in context: CGContext, iconType: IconType, size: CGSize) {
+        // 绘制渐变背景
+        let colors = [UIColor.systemBlue.cgColor, UIColor.systemPurple.cgColor]
+        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+        
+        context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: size.width, y: size.height), options: [])
+        
+        // 根据图标类型绘制对应的图标
+        let centerX = size.width / 2
+        let centerY = size.height / 2
+        let iconSize = min(size.width, size.height) * 0.4
+        
+        switch iconType {
+        case .calculator:
+            drawCalculatorIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .mouse:
+            drawMouseIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .keyboard:
+            drawKeyboardIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .monitor:
+            drawMonitorIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .location:
+            drawLocationIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .document:
+            drawDocumentIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .folder:
+            drawFolderIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .printer:
+            drawPrinterIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .calendar:
+            drawCalendarIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .phone:
+            drawPhoneIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .email:
+            drawEmailIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .message:
+            drawMessageIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .video:
+            drawVideoIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .music:
+            drawMusicIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .camera:
+            drawCameraIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .photo:
+            drawPhotoIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .videoPlayer:
+            drawVideoPlayerIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .settings:
+            drawSettingsIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .search:
+            drawSearchIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .heart:
+            drawHeartIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .star:
+            drawStarIcon(in: context, center: CGPoint(x: centerX, y: centerY), size: iconSize)
+        case .custom:
+            // AI生成图标，绘制机器人
+            drawRobotIcon(in: context, center: CGPoint(x: centerX, y: centerY), radius: iconSize / 2)
+        }
+    }
+    
+    // MARK: - 绘制文字图标（当没有匹配到图标时）
+    private func drawTextIcon(in context: CGContext, text: String, size: CGSize, settings: AISettings) {
+        // 绘制渐变背景
+        let colors = [UIColor.systemBlue.cgColor, UIColor.systemPurple.cgColor]
+        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+        
+        context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: size.width, y: size.height), options: [])
+        
+        // 绘制文字
+        drawText(in: context, text: text, size: size, settings: settings)
     }
     
     private func renderTextIcon(prompt: String, settings: AISettings) -> UIImage {
@@ -205,6 +351,528 @@ class LocalAIService: AIService {
         }
         
         return words.joined(separator: " ").uppercased()
+    }
+    
+    // MARK: - 各种图标的绘制方法
+    private func drawCalculatorIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 计算器主体
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(rect)
+        
+        // 屏幕
+        let screenRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.2)
+        context.setFillColor(UIColor.black.cgColor)
+        context.fill(screenRect)
+        
+        // 按钮网格
+        let buttonSize = size * 0.15
+        let buttonSpacing = size * 0.05
+        let startY = rect.minY + size * 0.4
+        
+        for row in 0..<4 {
+            for col in 0..<4 {
+                let x = rect.minX + size*0.1 + CGFloat(col) * (buttonSize + buttonSpacing)
+                let y = startY + CGFloat(row) * (buttonSize + buttonSpacing)
+                let buttonRect = CGRect(x: x, y: y, width: buttonSize, height: buttonSize)
+                
+                context.setFillColor(UIColor.systemBlue.cgColor)
+                context.fill(buttonRect)
+            }
+        }
+    }
+    
+    private func drawMouseIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 鼠标主体
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fillEllipse(in: rect)
+        
+        // 滚轮
+        let wheelRect = CGRect(x: center.x - size*0.1, y: center.y - size*0.3, width: size*0.2, height: size*0.1)
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(wheelRect)
+        
+        // 鼠标线
+        context.setStrokeColor(UIColor.systemGray2.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.move(to: CGPoint(x: rect.maxX, y: center.y))
+        context.addLine(to: CGPoint(x: rect.maxX + size*0.3, y: center.y))
+        context.strokePath()
+    }
+    
+    private func drawKeyboardIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 键盘主体
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(rect)
+        
+        // 按键
+        let keySize = size * 0.08
+        let keySpacing = size * 0.02
+        
+        for row in 0..<4 {
+            for col in 0..<6 {
+                let x = rect.minX + size*0.1 + CGFloat(col) * (keySize + keySpacing)
+                let y = rect.minY + size*0.2 + CGFloat(row) * (keySize + keySpacing)
+                let keyRect = CGRect(x: x, y: y, width: keySize, height: keySize)
+                
+                context.setFillColor(UIColor.white.cgColor)
+                context.fill(keyRect)
+            }
+        }
+    }
+    
+    private func drawMonitorIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 显示器屏幕
+        let screenRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.6)
+        context.setFillColor(UIColor.black.cgColor)
+        context.fill(screenRect)
+        
+        // 显示器边框
+        context.setStrokeColor(UIColor.systemGray.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.stroke(screenRect)
+        
+        // 显示器底座
+        let baseRect = CGRect(x: center.x - size*0.2, y: rect.maxY - size*0.2, width: size*0.4, height: size*0.1)
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(baseRect)
+    }
+    
+    private func drawLocationIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let radius = size * 0.3
+        
+        // 定位图标（大头针）
+        context.setFillColor(UIColor.systemRed.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius*2, height: radius*2))
+        
+        // 中心点
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - radius*0.3, y: center.y - radius*0.3, width: radius*0.6, height: radius*0.6))
+    }
+    
+    private func drawDocumentIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 文档主体
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(rect)
+        
+        // 文档边框
+        context.setStrokeColor(UIColor.systemGray.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.stroke(rect)
+        
+        // 文档内容线条
+        context.setStrokeColor(UIColor.systemGray2.cgColor)
+        context.setLineWidth(size * 0.02)
+        
+        for i in 1..<4 {
+            let y = rect.minY + size * CGFloat(i) * 0.2
+            context.move(to: CGPoint(x: rect.minX + size*0.1, y: y))
+            context.addLine(to: CGPoint(x: rect.maxX - size*0.1, y: y))
+        }
+        context.strokePath()
+    }
+    
+    private func drawFolderIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 文件夹主体
+        context.setFillColor(UIColor.systemYellow.cgColor)
+        context.fill(rect)
+        
+        // 文件夹标签
+        let tabRect = CGRect(x: rect.minX + size*0.1, y: rect.minY, width: size*0.4, height: size*0.2)
+        context.setFillColor(UIColor.systemOrange.cgColor)
+        context.fill(tabRect)
+        
+        // 边框
+        context.setStrokeColor(UIColor.systemGray.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.stroke(rect)
+        context.stroke(tabRect)
+    }
+    
+    private func drawPrinterIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 打印机主体
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(rect)
+        
+        // 纸张出口
+        let paperRect = CGRect(x: rect.minX + size*0.2, y: rect.minY, width: size*0.6, height: size*0.1)
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(paperRect)
+        
+        // 控制面板
+        let panelRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.2)
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(panelRect)
+    }
+    
+    private func drawCalendarIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 日历主体
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(rect)
+        
+        // 日历边框
+        context.setStrokeColor(UIColor.systemGray.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.stroke(rect)
+        
+        // 日历网格
+        context.setStrokeColor(UIColor.systemGray2.cgColor)
+        context.setLineWidth(size * 0.02)
+        
+        // 水平线
+        for i in 1..<6 {
+            let y = rect.minY + size * CGFloat(i) * 0.15
+            context.move(to: CGPoint(x: rect.minX, y: y))
+            context.addLine(to: CGPoint(x: rect.maxX, y: y))
+        }
+        
+        // 垂直线
+        for i in 1..<7 {
+            let x = rect.minX + size * CGFloat(i) * 0.15
+            context.move(to: CGPoint(x: x, y: rect.minY))
+            context.addLine(to: CGPoint(x: x, y: rect.maxY))
+        }
+        context.strokePath()
+    }
+    
+    private func drawPhoneIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 电话主体
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(rect)
+        
+        // 听筒
+        let receiverRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.3)
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(receiverRect)
+        
+        // 话筒
+        let micRect = CGRect(x: rect.minX + size*0.1, y: rect.maxY - size*0.4, width: size*0.8, height: size*0.3)
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(micRect)
+    }
+    
+    private func drawEmailIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 信封
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(rect)
+        
+        // 信封内容
+        let contentRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.8)
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(contentRect)
+        
+        // 信封边框
+        context.setStrokeColor(UIColor.systemGray.cgColor)
+        context.setLineWidth(size * 0.05)
+        context.stroke(rect)
+    }
+    
+    private func drawMessageIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 消息气泡
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fillEllipse(in: rect)
+        
+        // 消息尾巴
+        let tailPath = CGMutablePath()
+        tailPath.move(to: CGPoint(x: rect.maxX - size*0.2, y: rect.maxY))
+        tailPath.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY + size*0.2))
+        tailPath.addLine(to: CGPoint(x: rect.maxX - size*0.1, y: rect.maxY))
+        tailPath.closeSubpath()
+        
+        context.addPath(tailPath)
+        context.fillPath()
+    }
+    
+    private func drawVideoIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 摄像头
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fillEllipse(in: rect)
+        
+        // 镜头
+        let lensRect = CGRect(x: center.x - size*0.2, y: center.y - size*0.2, width: size*0.4, height: size*0.4)
+        context.setFillColor(UIColor.black.cgColor)
+        context.fillEllipse(in: lensRect)
+        
+        // 镜头中心
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - size*0.1, y: center.y - size*0.1, width: size*0.2, height: size*0.2))
+    }
+    
+    private func drawMusicIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 音符
+        context.setFillColor(UIColor.systemPurple.cgColor)
+        
+        // 音符杆
+        context.setStrokeColor(UIColor.systemPurple.cgColor)
+        context.setLineWidth(size * 0.1)
+        context.move(to: CGPoint(x: center.x + size*0.2, y: rect.minY))
+        context.addLine(to: CGPoint(x: center.x + size*0.2, y: rect.maxY))
+        context.strokePath()
+        
+        // 音符头
+        context.fillEllipse(in: CGRect(x: center.x - size*0.1, y: rect.minY, width: size*0.2, height: size*0.2))
+        
+        // 音符尾
+        context.move(to: CGPoint(x: center.x + size*0.2, y: rect.minY))
+        context.addCurve(to: CGPoint(x: center.x + size*0.4, y: rect.minY + size*0.2),
+                        control1: CGPoint(x: center.x + size*0.3, y: rect.minY),
+                        control2: CGPoint(x: center.x + size*0.4, y: rect.minY + size*0.1))
+        context.strokePath()
+    }
+    
+    private func drawCameraIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 相机主体
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fill(rect)
+        
+        // 镜头
+        let lensRect = CGRect(x: center.x - size*0.2, y: center.y - size*0.2, width: size*0.4, height: size*0.4)
+        context.setFillColor(UIColor.black.cgColor)
+        context.fillEllipse(in: lensRect)
+        
+        // 镜头中心
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - size*0.1, y: center.y - size*0.1, width: size*0.2, height: size*0.2))
+        
+        // 闪光灯
+        let flashRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.15, height: size*0.1)
+        context.setFillColor(UIColor.systemYellow.cgColor)
+        context.fill(flashRect)
+    }
+    
+    private func drawPhotoIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 相框
+        context.setFillColor(UIColor.systemBrown.cgColor)
+        context.fill(rect)
+        
+        // 照片
+        let photoRect = CGRect(x: rect.minX + size*0.1, y: rect.minY + size*0.1, width: size*0.8, height: size*0.8)
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(photoRect)
+        
+        // 照片内容（简单的山景）
+        context.setFillColor(UIColor.systemGreen.cgColor)
+        context.fill(CGRect(x: photoRect.minX, y: photoRect.maxY - size*0.2, width: photoRect.width, height: size*0.2))
+        
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(CGRect(x: photoRect.minX, y: photoRect.minY, width: photoRect.width, height: photoRect.height - size*0.2))
+    }
+    
+    private func drawVideoPlayerIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let rect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size)
+        
+        // 播放器主体
+        context.setFillColor(UIColor.black.cgColor)
+        context.fill(rect)
+        
+        // 播放按钮（三角形）
+        let triangleSize = size * 0.3
+        let trianglePath = CGMutablePath()
+        trianglePath.move(to: CGPoint(x: center.x - triangleSize*0.3, y: center.y - triangleSize*0.5))
+        trianglePath.addLine(to: CGPoint(x: center.x - triangleSize*0.3, y: center.y + triangleSize*0.5))
+        trianglePath.addLine(to: CGPoint(x: center.x + triangleSize*0.7, y: center.y))
+        trianglePath.closeSubpath()
+        
+        context.setFillColor(UIColor.white.cgColor)
+        context.addPath(trianglePath)
+        context.fillPath()
+    }
+    
+    private func drawSettingsIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let radius = size * 0.4
+        
+        // 齿轮外圈
+        context.setFillColor(UIColor.systemGray.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius*2, height: radius*2))
+        
+        // 齿轮内圈
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - radius*0.6, y: center.y - radius*0.6, width: radius*1.2, height: radius*1.2))
+        
+        // 中心圆
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - radius*0.2, y: center.y - radius*0.2, width: radius*0.4, height: radius*0.4))
+    }
+    
+    private func drawSearchIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let radius = size * 0.3
+        
+        // 放大镜外圈
+        context.setStrokeColor(UIColor.systemBlue.cgColor)
+        context.setLineWidth(size * 0.1)
+        context.strokeEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius*2, height: radius*2))
+        
+        // 放大镜手柄
+        let handleLength = size * 0.3
+        context.move(to: CGPoint(x: center.x + radius*0.7, y: center.y + radius*0.7))
+        context.addLine(to: CGPoint(x: center.x + radius*0.7 + handleLength, y: center.y + radius*0.7 + handleLength))
+        context.strokePath()
+    }
+    
+    private func drawHeartIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let heartSize = size * 0.4
+        let heartWidth = heartSize
+        let heartHeight = heartSize * 0.85
+        
+        // 设置心形颜色
+        context.setFillColor(UIColor.systemRed.cgColor)
+        
+        // 绘制心形路径
+        let heartPath = CGMutablePath()
+        
+        // 心形的关键点
+        let topRadius = heartWidth * 0.25
+        let leftTopCenter = CGPoint(x: center.x - topRadius * 0.7, y: center.y - heartHeight * 0.2)
+        let rightTopCenter = CGPoint(x: center.x + topRadius * 0.7, y: center.y - heartHeight * 0.2)
+        
+        // 心形底部点
+        let bottomPoint = CGPoint(x: center.x, y: center.y + heartHeight * 0.35)
+        
+        // 开始绘制心形路径
+        let leftBottom = CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius)
+        heartPath.move(to: leftBottom)
+        
+        // 左半圆 (下半部分)
+        heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: .pi / 2, endAngle: .pi * 3 / 2, clockwise: false)
+        
+        // 连接到右半圆
+        let rightBottom = CGPoint(x: rightTopCenter.x, y: rightTopCenter.y + topRadius)
+        heartPath.addLine(to: rightBottom)
+        
+        // 右半圆 (下半部分)
+        heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: .pi * 3 / 2, endAngle: .pi / 2, clockwise: false)
+        
+        // 连接到心形底部
+        heartPath.addLine(to: bottomPoint)
+        
+        // 闭合路径
+        heartPath.closeSubpath()
+        
+        // 填充心形
+        context.addPath(heartPath)
+        context.fillPath()
+    }
+    
+    private func drawStarIcon(in context: CGContext, center: CGPoint, size: CGFloat) {
+        let radius = size * 0.4
+        
+        // 五角星
+        context.setFillColor(UIColor.systemYellow.cgColor)
+        
+        let starPath = CGMutablePath()
+        let outerRadius = radius
+        let innerRadius = radius * 0.4
+        
+        for i in 0..<10 {
+            let angle = Double(i) * .pi / 5 - .pi / 2
+            let currentRadius = i % 2 == 0 ? outerRadius : innerRadius
+            let x = center.x + CGFloat(cos(angle)) * currentRadius
+            let y = center.y + CGFloat(sin(angle)) * currentRadius
+            
+            if i == 0 {
+                starPath.move(to: CGPoint(x: x, y: y))
+            } else {
+                starPath.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        starPath.closeSubpath()
+        
+        context.addPath(starPath)
+        context.fillPath()
+    }
+    
+    private func drawRobotIcon(in context: CGContext, center: CGPoint, radius: CGFloat) {
+        // 机器人头部
+        let headRect = CGRect(
+            x: center.x - radius,
+            y: center.y - radius,
+            width: radius * 2,
+            height: radius * 2
+        )
+        
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fillEllipse(in: headRect)
+        
+        // 机器人眼睛
+        let eyeSize = radius * 0.2
+        let leftEye = CGRect(
+            x: center.x - radius * 0.4,
+            y: center.y - radius * 0.3,
+            width: eyeSize,
+            height: eyeSize
+        )
+        let rightEye = CGRect(
+            x: center.x + radius * 0.2,
+            y: center.y - radius * 0.3,
+            width: eyeSize,
+            height: eyeSize
+        )
+        
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: leftEye)
+        context.fillEllipse(in: rightEye)
+        
+        // 机器人嘴巴
+        let mouthRect = CGRect(
+            x: center.x - radius * 0.3,
+            y: center.y + radius * 0.2,
+            width: radius * 0.6,
+            height: radius * 0.1
+        )
+        
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(mouthRect)
+        
+        // 机器人天线
+        let antennaRect = CGRect(
+            x: center.x - radius * 0.1,
+            y: center.y - radius * 1.2,
+            width: radius * 0.2,
+            height: radius * 0.4
+        )
+        
+        context.setFillColor(UIColor.systemBlue.cgColor)
+        context.fill(antennaRect)
+        
+        // 天线顶部
+        let antennaTop = CGRect(
+            x: center.x - radius * 0.15,
+            y: center.y - radius * 1.4,
+            width: radius * 0.3,
+            height: radius * 0.2
+        )
+        
+        context.setFillColor(UIColor.systemOrange.cgColor)
+        context.fillEllipse(in: antennaTop)
     }
 }
 
