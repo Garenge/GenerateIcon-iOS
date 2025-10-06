@@ -166,7 +166,7 @@ class ToolsIconGenerator: BaseIconGenerator {
         // 心形图标
         let heartSize = iconSize * 0.8
         let heartWidth = heartSize
-        let heartHeight = heartSize * 0.9
+        let heartHeight = heartSize * 0.8
         
         // 设置心形颜色
         context.setFillColor(UIColor.systemRed.cgColor)
@@ -176,8 +176,8 @@ class ToolsIconGenerator: BaseIconGenerator {
         
         // 心形的上半部分（两个圆形）
         let topRadius = heartWidth * 0.25
-        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.5, y: centerY - heartHeight * 0.1)
-        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.5, y: centerY - heartHeight * 0.1)
+        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.5, y: centerY - heartHeight * 0.15)
+        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.5, y: centerY - heartHeight * 0.15)
         
         // 左圆
         heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
@@ -185,12 +185,12 @@ class ToolsIconGenerator: BaseIconGenerator {
         // 右圆
         heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
         
-        // 心形的下半部分（三角形）
-        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.4)
-        let leftBottomPoint = CGPoint(x: centerX - heartWidth * 0.4, y: centerY + heartHeight * 0.1)
-        let rightBottomPoint = CGPoint(x: centerX + heartWidth * 0.4, y: centerY + heartHeight * 0.1)
+        // 心形的下半部分（倒三角形，形成爱心的尖端）
+        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.25)
+        let leftBottomPoint = CGPoint(x: centerX - heartWidth * 0.3, y: centerY - heartHeight * 0.05)
+        let rightBottomPoint = CGPoint(x: centerX + heartWidth * 0.3, y: centerY - heartHeight * 0.05)
         
-        // 添加三角形路径
+        // 添加倒三角形路径
         heartPath.move(to: bottomPoint)
         heartPath.addLine(to: leftBottomPoint)
         heartPath.addLine(to: rightBottomPoint)
