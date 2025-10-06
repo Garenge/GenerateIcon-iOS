@@ -86,6 +86,21 @@ struct TextPreviewComponent: View {
                 }
             }
         }
+        .onChange(of: config.text) { _ in
+            // 文字内容改变时的处理（如果需要的话）
+        }
+        .onChange(of: config.fontSize) { _ in
+            // 字体大小改变时的处理（如果需要的话）
+        }
+        .onChange(of: config.fontName) { _ in
+            // 字体名称改变时的处理（如果需要的话）
+        }
+        .onChange(of: config.textColor) { _ in
+            // 文字颜色改变时的处理（如果需要的话）
+        }
+        .onChange(of: config.backgroundColor) { _ in
+            // 背景颜色改变时的处理（如果需要的话）
+        }
     }
 }
 
