@@ -32,20 +32,14 @@ struct IconGeneratorView: View {
                         // 图标选择按钮（小屏设备）
                         if geometry.size.width <= 800 {
                             Button(action: {
-                                if viewModel.isInAIMode {
-                                    // AI模式下点击按钮，直接退出AI模式，显示原先的预设图标
-                                    viewModel.clearAIIcon()
-                                    viewModel.refreshPreview()
-                                } else {
-                                    // 预设模式下点击按钮，打开选择器
-                                    showingIconSelector = true
-                                }
+                                // 无论是AI模式还是预设模式，都打开选择器
+                                showingIconSelector = true
                             }) {
                                 HStack {
                                     Text(viewModel.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
                                         .font(.headline)
                                     Spacer()
-                                    Image(systemName: viewModel.isInAIMode ? "xmark.circle" : "chevron.down")
+                                    Image(systemName: "chevron.down")
                                 }
                                 .padding()
                                 .background(viewModel.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
