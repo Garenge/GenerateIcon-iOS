@@ -30,7 +30,7 @@ struct IconSelectorView: View {
                                         ForEach(category.iconTypes) { type in
                                             IconTypeCard(
                                                 type: type,
-                                                isSelected: selectedType == type,
+                                                isSelected: !isInAIMode && selectedType == type,
                                                 onTap: {
                                                     print("🎯 Selected icon type: \(type.name)")
                                                     selectedType = type
@@ -74,10 +74,10 @@ struct IconSelectorView: View {
                                 .padding()
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.orange.opacity(0.1))
+                                        .fill(isInAIMode ? Color.orange.opacity(0.2) : Color.orange.opacity(0.1))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.orange.opacity(0.3), lineWidth: 2)
+                                                .stroke(isInAIMode ? Color.orange.opacity(0.6) : Color.orange.opacity(0.3), lineWidth: isInAIMode ? 3 : 2)
                                         )
                                 )
                             }
