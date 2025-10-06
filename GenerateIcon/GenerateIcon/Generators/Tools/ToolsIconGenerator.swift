@@ -166,33 +166,35 @@ class ToolsIconGenerator: BaseIconGenerator {
         // 心形图标
         let heartSize = iconSize * 0.8
         let heartWidth = heartSize
-        let heartHeight = heartSize * 0.9
+        let heartHeight = heartSize * 0.85
         
         // 设置心形颜色
         context.setFillColor(UIColor.systemRed.cgColor)
         
-        // 绘制心形路径 - 使用贝塞尔曲线创建更自然的形状
+        // 绘制心形路径 - 使用数学公式绘制标准心形
         let heartPath = CGMutablePath()
         
         // 心形的关键点
-        let topRadius = heartWidth * 0.3
-        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.6, y: centerY - heartHeight * 0.1)
-        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.6, y: centerY - heartHeight * 0.1)
+        let topRadius = heartWidth * 0.25
+        let leftTopCenter = CGPoint(x: centerX - topRadius * 0.7, y: centerY - heartHeight * 0.2)
+        let rightTopCenter = CGPoint(x: centerX + topRadius * 0.7, y: centerY - heartHeight * 0.2)
         
         // 心形底部点
-        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.4)
+        let bottomPoint = CGPoint(x: centerX, y: centerY + heartHeight * 0.35)
         
         // 开始绘制心形路径
-        // 从左侧圆形开始
-        heartPath.move(to: CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius))
+        // 从左侧圆形底部开始
+        let leftBottom = CGPoint(x: leftTopCenter.x, y: leftTopCenter.y + topRadius)
+        heartPath.move(to: leftBottom)
         
-        // 左半圆
+        // 左半圆 (下半部分)
         heartPath.addArc(center: leftTopCenter, radius: topRadius, startAngle: .pi / 2, endAngle: .pi * 3 / 2, clockwise: false)
         
         // 连接到右半圆
-        heartPath.addLine(to: CGPoint(x: rightTopCenter.x - topRadius, y: rightTopCenter.y))
+        let rightBottom = CGPoint(x: rightTopCenter.x, y: rightTopCenter.y + topRadius)
+        heartPath.addLine(to: rightBottom)
         
-        // 右半圆
+        // 右半圆 (下半部分)
         heartPath.addArc(center: rightTopCenter, radius: topRadius, startAngle: .pi * 3 / 2, endAngle: .pi / 2, clockwise: false)
         
         // 连接到心形底部
