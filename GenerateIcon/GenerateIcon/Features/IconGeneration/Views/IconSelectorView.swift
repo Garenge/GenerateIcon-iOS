@@ -61,18 +61,14 @@ struct IconSelectorView: View {
                                 .padding(.horizontal)
                             
                             Button(action: {
-                                if isInAIMode {
-                                    onExitAI()
-                                    dismiss()
-                                } else {
-                                    onAITap()
-                                }
+                                // 无论是AI模式还是预设模式，都打开AI配置界面
+                                onAITap()
                             }) {
                                 HStack {
                                     Text("🎨 AI生成")
                                         .font(.headline)
                                     Spacer()
-                                    Image(systemName: isInAIMode ? "xmark.circle" : "sparkles")
+                                    Image(systemName: "sparkles")
                                         .foregroundColor(.orange)
                                 }
                                 .padding()
