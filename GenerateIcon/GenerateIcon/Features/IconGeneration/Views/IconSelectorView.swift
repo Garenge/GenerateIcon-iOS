@@ -6,6 +6,7 @@ struct IconSelectorView: View {
     let onAITap: () -> Void
     let isInAIMode: Bool
     let onExitAI: () -> Void
+    let onPresetSelected: () -> Void
     
     @Environment(\.dismiss) private var dismiss
     @State private var scrollOffset: CGFloat = 0
@@ -33,6 +34,12 @@ struct IconSelectorView: View {
                                                 onTap: {
                                                     print("🎯 Selected icon type: \(type.name)")
                                                     selectedType = type
+                                                    // 如果当前在AI模式下选择预设图标，需要退出AI模式
+                                                    if isInAIMode {
+                                                        onExitAI()
+                                                    }
+                                                    // 触发预设图标选择回调
+                                                    onPresetSelected()
                                                     dismiss()
                                                 }
                                             )
@@ -154,6 +161,7 @@ struct IconTypeCard: View {
         selectedType: .constant(.calculator),
         onAITap: { },
         isInAIMode: false,
-        onExitAI: { }
+        onExitAI: { },
+        onPresetSelected: { }
     )
 }

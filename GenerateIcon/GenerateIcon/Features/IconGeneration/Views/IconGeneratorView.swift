@@ -190,6 +190,10 @@ struct IconGeneratorView: View {
                 onExitAI: {
                     viewModel.clearAIIcon()
                     viewModel.refreshPreview()
+                },
+                onPresetSelected: {
+                    // 选择预设图标时刷新预览
+                    viewModel.refreshPreview()
                 }
             )
         }
