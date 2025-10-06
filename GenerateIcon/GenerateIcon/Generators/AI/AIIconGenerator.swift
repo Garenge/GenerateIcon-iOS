@@ -151,9 +151,11 @@ class LocalAIService: AIService {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
-            // 绘制背景
-            cgContext.setFillColor(UIColor.systemBackground.cgColor)
-            cgContext.fill(CGRect(origin: .zero, size: size))
+            // 绘制渐变背景
+            let colors = [UIColor.systemBlue.cgColor, UIColor.systemPurple.cgColor]
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+            
+            cgContext.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: size.width, y: size.height), options: [])
             
             // 绘制文字
             drawText(in: cgContext, text: prompt, size: size, settings: settings)
@@ -164,15 +166,18 @@ class LocalAIService: AIService {
         let fontSize = settings.fontSize == .custom ? (settings.customFontSize ?? 100) : settings.fontSize.size
         let font = UIFont(name: settings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
         
-        // 将SwiftUI Color转换为UIColor
-        let uiColor = UIColor(settings.textColor.color)
+        // 确保文字颜色在渐变背景上可见
+        let textColor = UIColor.white
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: uiColor
+            .foregroundColor: textColor
         ]
         
-        let textSize = text.size(withAttributes: attributes)
+        // 处理文字内容，提取关键词
+        let displayText = extractKeywords(from: text)
+        
+        let textSize = displayText.size(withAttributes: attributes)
         let textRect = CGRect(
             x: (size.width - textSize.width) / 2,
             y: (size.height - textSize.height) / 2,
@@ -180,7 +185,26 @@ class LocalAIService: AIService {
             height: textSize.height
         )
         
-        text.draw(in: textRect, withAttributes: attributes)
+        // 添加文字阴影效果
+        context.setShadow(offset: CGSize(width: 2, height: 2), blur: 4, color: UIColor.black.withAlphaComponent(0.5).cgColor)
+        
+        displayText.draw(in: textRect, withAttributes: attributes)
+        
+        // 清除阴影
+        context.setShadow(offset: .zero, blur: 0, color: nil)
+    }
+    
+    private func extractKeywords(from text: String) -> String {
+        // 提取关键词，用于显示
+        let words = text.components(separatedBy: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
+            .filter { !$0.isEmpty }
+            .prefix(3) // 最多取前3个词
+        
+        if words.isEmpty {
+            return "AI"
+        }
+        
+        return words.joined(separator: " ").uppercased()
     }
 }
 
