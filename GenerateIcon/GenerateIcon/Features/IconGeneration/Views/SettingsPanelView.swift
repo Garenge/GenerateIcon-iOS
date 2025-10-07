@@ -6,6 +6,8 @@ struct SettingsPanelView: View {
     @Binding var isVisible: Bool
     var currentIconType: IconType = .calculator
     var onSettingsChanged: (() -> Void)? = nil
+    // 传入的自定义图标（AI生成的图标）。若存在，则优先展示此图
+    var customIcon: UIImage? = nil
     
     // 预览相关状态
     @State private var previewImage: UIImage?
@@ -92,12 +94,16 @@ struct SettingsPanelView: View {
         .onChange(of: settings) { _ in
             // 设置变化时立即触发预览更新
             onSettingsChanged?()
-            // 延迟刷新预览，避免过度刷新
-            refreshPreviewWithDelay()
+            // 无论是否有自定义图标，都要生成预览（自定义图标需要与背景合成）
+            generatePreview()
+            // 发送全局通知，首页等位置可立即刷新
+            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
         }
         .onChange(of: currentIconType) { _ in
             // 图标类型变化时立即刷新预览
             generatePreview()
+            // 发送全局通知
+            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
         }
         .onAppear {
             // 面板出现时生成初始预览
@@ -106,6 +112,8 @@ struct SettingsPanelView: View {
         .onDisappear {
             // 面板消失时清理任务
             cleanupTasks()
+            // 设置面板关闭时也广播刷新
+            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
         }
     }
     
@@ -283,12 +291,23 @@ struct SettingsPanelView: View {
     @MainActor
     private func generatePreviewImage() async {
         do {
-            // 使用当前选中的图标类型进行预览
-            let image = try await IconGeneratorService().generatePreview(
-                type: currentIconType,
-                size: CGSize(width: 100, height: 100),
-                settings: settings
-            )
+            let service = IconGeneratorService()
+            let image: UIImage
+            if let customIcon = customIcon {
+                // 将自定义图标与当前设置组合，确保底图颜色等设置生效
+                image = try await service.composePreview(
+                    with: customIcon,
+                    size: CGSize(width: 100, height: 100),
+                    settings: settings
+                )
+            } else {
+                // 使用当前选中的图标类型进行预览
+                image = try await service.generatePreview(
+                    type: currentIconType,
+                    size: CGSize(width: 100, height: 100),
+                    settings: settings
+                )
+            }
             
             // 检查任务是否被取消
             guard !Task.isCancelled else { return }

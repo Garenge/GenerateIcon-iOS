@@ -75,6 +75,19 @@ class IconGeneratorService: ObservableObject {
         print("🎨 Preview generation completed for type: \(type.name)")
         return finalIcon
     }
+
+    // MARK: - 组合自定义图标与背景用于预览（例如AI生成的图片）
+    func composePreview(
+        with icon: UIImage,
+        size: CGSize,
+        settings: IconSettings
+    ) async throws -> UIImage {
+        return try await applyBackgroundAndEffects(
+            icon: icon,
+            size: size,
+            settings: settings
+        )
+    }
     
     // MARK: - 生成iOS图标集
     func generateIOSIconSet(

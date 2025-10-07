@@ -42,13 +42,6 @@ struct IconPreviewComponent: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
-                } else if let customIcon = config.customIcon {
-                    // AI生成的图标
-                    Image(uiImage: customIcon)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: config.previewSize.width * 0.8, height: config.previewSize.height * 0.8)
-                        .cornerRadius(8)
                 } else if let previewImage = previewImage {
                     // 预设图标
                     Image(uiImage: previewImage)
@@ -111,6 +104,10 @@ struct IconPreviewComponent: View {
         .onChange(of: config.settings) { _ in
             loadPreview()
         }
+        // 订阅设置变更全局通知，立即重载预览
+        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
+            loadPreview()
+        }
     }
     
     private func loadPreview() {
@@ -123,35 +120,41 @@ struct IconPreviewComponent: View {
         // 清除之前的预览
         previewImage = nil
         
-        // 如果不是加载状态且有自定义图标，不需要生成预览
-        if !config.isLoading && config.customIcon != nil {
-            return
-        }
-        
         // 生成预览
+        let expectedType = config.iconType
         currentTask = Task {
-            await generatePreview()
+            await generatePreview(targetIconType: expectedType)
         }
     }
     
     @MainActor
-    private func generatePreview() async {
-        guard let targetIconType = currentIconType else { return }
+    private func generatePreview(targetIconType: IconType) async {
         
         do {
-            let image = try await IconGeneratorService().generatePreview(
-                type: targetIconType,
-                size: config.previewSize,
-                settings: config.settings
-            )
+            let service = IconGeneratorService()
+            let image: UIImage
+            if let custom = config.customIcon {
+                // 组合自定义(透明文字)图与当前设置的背景/圆角等，保证与设置一致
+                image = try await service.composePreview(
+                    with: custom,
+                    size: config.previewSize,
+                    settings: config.settings
+                )
+            } else {
+                image = try await service.generatePreview(
+                    type: targetIconType,
+                    size: config.previewSize,
+                    settings: config.settings
+                )
+            }
             
             // 检查任务是否被取消或图标类型是否已改变
-            guard !Task.isCancelled && currentIconType == targetIconType else { return }
+            guard !Task.isCancelled && config.iconType == targetIconType else { return }
             
             previewImage = image
         } catch {
             // 检查任务是否被取消或图标类型是否已改变
-            guard !Task.isCancelled && currentIconType == targetIconType else { return }
+            guard !Task.isCancelled && config.iconType == targetIconType else { return }
             
             print("生成预览失败: \(error)")
         }

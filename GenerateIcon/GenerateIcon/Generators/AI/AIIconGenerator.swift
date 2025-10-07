@@ -142,7 +142,11 @@ class LocalAIService: AIService {
     // MARK: - 智能图标生成
     private func renderSmartIcon(prompt: String, settings: AISettings) -> UIImage {
         let size = CGSize(width: 1024, height: 1024)
-        let renderer = UIGraphicsImageRenderer(size: size)
+        // 使用透明背景的渲染格式（opaque=false）以确保背景可透出
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = UIScreen.main.scale
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
@@ -151,6 +155,11 @@ class LocalAIService: AIService {
             cgContext.setShouldAntialias(true)
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
+            
+            // 显式清空为透明背景，避免默认背景色
+            cgContext.setBlendMode(.clear)
+            cgContext.fill(CGRect(origin: .zero, size: size))
+            cgContext.setBlendMode(.normal)
             
             // 尝试匹配关键词到现有图标
             if let matchedIconType = matchKeywordsToIconType(prompt) {
@@ -275,11 +284,8 @@ class LocalAIService: AIService {
     
     // MARK: - 绘制文字图标（当没有匹配到图标时）
     private func drawTextIcon(in context: CGContext, text: String, size: CGSize, settings: AISettings) {
-        // 绘制渐变背景
-        let colors = [UIColor.systemBlue.cgColor, UIColor.systemPurple.cgColor]
-        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
-        
-        context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: size.width, y: size.height), options: [])
+        // 不绘制背景，只绘制文字，让背景透明
+        // 这样生成的image可以作为ViewC，通过ViewB应用背景效果
         
         // 绘制文字
         drawText(in: context, text: text, size: size, settings: settings)
@@ -287,7 +293,11 @@ class LocalAIService: AIService {
     
     private func renderTextIcon(prompt: String, settings: AISettings) -> UIImage {
         let size = CGSize(width: 1024, height: 1024)
-        let renderer = UIGraphicsImageRenderer(size: size)
+        // 使用透明背景的渲染格式（opaque=false）以确保背景可透出
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = UIScreen.main.scale
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
@@ -297,11 +307,13 @@ class LocalAIService: AIService {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
-            // 绘制渐变背景
-            let colors = [UIColor.systemBlue.cgColor, UIColor.systemPurple.cgColor]
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+            // 显式清空为透明背景，避免默认背景色
+            cgContext.setBlendMode(.clear)
+            cgContext.fill(CGRect(origin: .zero, size: size))
+            cgContext.setBlendMode(.normal)
             
-            cgContext.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: size.width, y: size.height), options: [])
+            // 不绘制背景，只绘制文字，让背景透明
+            // 这样生成的image可以作为ViewC，通过ViewB应用背景效果
             
             // 绘制文字
             drawText(in: cgContext, text: prompt, size: size, settings: settings)
@@ -312,8 +324,8 @@ class LocalAIService: AIService {
         let fontSize = settings.fontSize == .custom ? (settings.customFontSize ?? 100) : settings.fontSize.size
         let font = UIFont(name: settings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
         
-        // 确保文字颜色在渐变背景上可见
-        let textColor = UIColor.white
+        // 使用用户配置的文字颜色
+        let textColor = UIColor(settings.textColor.color)
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
@@ -350,7 +362,7 @@ class LocalAIService: AIService {
             return "AI"
         }
         
-        return words.joined(separator: " ").uppercased()
+        return words.joined(separator: " ")
     }
     
     // MARK: - 各种图标的绘制方法

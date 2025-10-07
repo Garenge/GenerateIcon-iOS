@@ -104,6 +104,10 @@ open GenerateIcon.xcodeproj
 - [x] 文档类图标区分
 - [x] HUD和Toast集成
 - [x] 用户反馈系统
+- [x] 预览组件统一（首页与设置页使用相同props）
+- [x] AI文本图透明输出（仅文字，背景透明）
+- [x] 自定义图与背景合成（composePreview）
+- [x] NotificationCenter即时刷新（设置变更与面板关闭时广播）
 
 ### 🚧 待实现功能
 - [ ] 图标模板库
@@ -113,6 +117,13 @@ open GenerateIcon.xcodeproj
 - [ ] 图标历史记录
 
 ## 📈 最新更新
+
+### 2025-10-07 更新
+- **图层架构统一**：明确ViewA（外框基底）/ViewB（容器背景）/ViewC（小图标）的三层结构
+- **AI文本透明化**：AI文字输出透明背景，仅文字像素，背景由ViewB负责
+- **预览一致性**：首页与设置页统一通过IconPreviewComponent渲染，使用相同IconPreviewConfig
+- **即时刷新**：引入NotificationCenter，设置变更/关闭时强制刷新所有预览
+- **竞态防护**：预览任务仅在iconType仍匹配时应用结果，避免错位
 
 ### 2024-10-06 更新
 - **文档类图标区分**：为文档、文件夹、打印机、日历实现独特视觉设计
