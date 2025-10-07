@@ -70,15 +70,20 @@ class IconGeneratorViewModel: ObservableObject {
         
         do {
             let aiService = LocalAIService()
-            let image = try await aiService.generateIcon(prompt: prompt, settings: settings)
+            let aiIcon = try await aiService.generateIcon(prompt: prompt, settings: settings)
             
             await MainActor.run {
-                self.lastGeneratedIcon = image
+                self.lastGeneratedIcon = aiIcon
                 self.isGenerating = false
             }
             
-            // 保存到相册
-            try await fileManagerService.saveToPhotoLibrary(image)
+            // 生成完整的ViewA+ViewB+ViewC合成图标并保存到相册（AI图+当前背景设置）
+            let finalIcon = try await iconGeneratorService.composePreview(
+                with: aiIcon,
+                size: CGSize(width: 1024, height: 1024), // 高分辨率保存
+                settings: settings // 使用当前的背景设置
+            )
+            try await fileManagerService.saveToPhotoLibrary(finalIcon)
             
             // 显示成功Toast
             HUDToastManager.shared.showSuccessToast(message: "AI图标生成并保存成功！")
@@ -161,12 +166,40 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     func confirmSaveToPhotoLibrary() async {
-        guard let image = pendingImage else { return }
-        
         // 显示保存开始的Toast
         HUDToastManager.shared.showToast(message: "正在保存到相册...", type: .info, duration: 1.5)
         
         do {
+            let image: UIImage
+            
+            if isInAIMode, let aiIcon = lastGeneratedIcon {
+                // AI模式：保存AI图+当前背景设置的合成图（ViewA+ViewB+ViewC）
+                image = try await iconGeneratorService.composePreview(
+                    with: aiIcon,
+                    size: CGSize(width: 1024, height: 1024), // 高分辨率保存
+                    settings: settings // 使用当前的背景设置
+                )
+            } else if let pendingImage = pendingImage {
+                // 预设模式：保存预设图+当前背景设置的合成图（ViewA+ViewB+ViewC）
+                image = try await iconGeneratorService.composePreview(
+                    with: pendingImage,
+                    size: CGSize(width: 1024, height: 1024), // 高分辨率保存
+                    settings: settings // 使用当前的背景设置
+                )
+            } else {
+                // 兜底：生成当前预设图+背景设置的合成图
+                let presetIcon = try await iconGeneratorService.generateIcon(
+                    type: selectedIconType ?? .calculator,
+                    size: CGSize(width: 1024, height: 1024),
+                    settings: IconSettings() // 生成纯预设图
+                )
+                image = try await iconGeneratorService.composePreview(
+                    with: presetIcon,
+                    size: CGSize(width: 1024, height: 1024),
+                    settings: settings // 应用当前背景设置
+                )
+            }
+            
             try await fileManagerService.saveToPhotoLibrary(image)
             await MainActor.run {
                 self.showingSaveConfirmation = false
@@ -253,9 +286,8 @@ class IconGeneratorViewModel: ObservableObject {
     func refreshPreview() {
         // 触发预览刷新
         print("🔄 IconGeneratorViewModel: Refreshing preview")
-        objectWillChange.send()
         
-        // 强制触发UI更新
+        // 立即触发UI更新
         DispatchQueue.main.async { [weak self] in
             self?.objectWillChange.send()
         }

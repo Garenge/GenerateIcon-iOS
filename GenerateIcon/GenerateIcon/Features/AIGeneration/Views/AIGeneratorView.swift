@@ -63,6 +63,16 @@ struct AIGeneratorView: View {
             .onChange(of: aiSettings.textColor) { _ in
                 updatePreview()
             }
+            .onChange(of: aiSettings.textStyle) { _ in
+                updatePreview()
+            }
+            .onChange(of: aiSettings.maxLength) { _ in
+                updatePreviewText()
+                updatePreview()
+            }
+            .onChange(of: aiSettings.textWrap) { _ in
+                updatePreview()
+            }
         }
     }
     
@@ -262,17 +272,32 @@ struct AIGeneratorView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
             
-            // 使用IconPreviewComponent来预览AI生成效果，确保与首页一致
-            IconPreviewComponent(
-                config: IconPreviewConfig(
-                    iconType: .heart, // 使用一个默认图标类型
-                    settings: IconSettings(), // 使用默认设置
-                    isLoading: false,
-                    customIcon: previewIcon, // 使用状态变量
-                    previewSize: CGSize(width: 256, height: 256), // 与首页统一尺寸
-                    showPreviewInfo: false
-                )
-            )
+            // 直接显示AI生成的预览图标，确保实时响应设置变化
+            ZStack {
+                // 背景
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(width: 256, height: 256)
+                
+                if let previewIcon = previewIcon {
+                    // AI生成的预览图片
+                    Image(uiImage: previewIcon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 230, height: 230)
+                        .cornerRadius(8)
+                } else {
+                    // 默认状态
+                    VStack {
+                        Image(systemName: "photo")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
+                        Text("暂无预览")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         }
     }
     
@@ -312,7 +337,7 @@ struct AIGeneratorView: View {
             previewText = "MYAPP"
         } else {
             let words = prompt.components(separatedBy: .whitespaces)
-            let firstWord = words.first?.uppercased() ?? "MYAPP"
+            let firstWord = words.first ?? "MYAPP"
             previewText = String(firstWord.prefix(aiSettings.maxLength))
         }
     }

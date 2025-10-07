@@ -65,6 +65,7 @@ struct IconGeneratorView: View {
                                     showPreviewInfo: true
                                 )
                             )
+                            .id("preview-\(selectedIconType.rawValue)-ai")
                         } else {
                             IconPreviewComponent(
                                 config: IconPreviewConfig(
@@ -76,6 +77,7 @@ struct IconGeneratorView: View {
                                     showPreviewInfo: true
                                 )
                             )
+                            .id("preview-\(selectedIconType.rawValue)-preset")
                         }
                         
                         // 生成按钮
@@ -112,7 +114,12 @@ struct IconGeneratorView: View {
                         SettingsPanelView(
                             settings: $viewModel.settings,
                             isVisible: $showingSettings,
-                            currentIconType: selectedIconType
+                            currentIconType: selectedIconType,
+                            onSettingsChanged: {
+                                print("🔄 Settings changed, refreshing preview")
+                                viewModel.refreshPreview()
+                            },
+                            customIcon: viewModel.lastGeneratedIcon
                         )
                         .frame(width: 300)
                     }
@@ -138,7 +145,8 @@ struct IconGeneratorView: View {
                         // 设置变化时立即触发预览刷新
                         print("🔄 Settings changed, refreshing preview")
                         viewModel.refreshPreview()
-                    }
+                    },
+                    customIcon: viewModel.lastGeneratedIcon
                 )
                 .onDisappear {
                     // 设置面板关闭时也触发预览刷新
