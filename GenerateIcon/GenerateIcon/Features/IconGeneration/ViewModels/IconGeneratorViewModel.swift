@@ -22,7 +22,7 @@ class IconGeneratorViewModel: ObservableObject {
     @Published var viewABackgroundColor: Color = .clear
     @Published var viewABorderColor: Color = .clear
     @Published var viewACornerRadius: CGFloat = 0
-    @Published var viewAPadding: CGFloat = 0
+    @Published var viewAPadding: CGFloat = 20
     @Published var viewABorderWidth: CGFloat = 0
     
     @Published var viewBBackgroundColor: Color = Color(red: 0.4, green: 0.49, blue: 0.92)
@@ -108,7 +108,7 @@ class IconGeneratorViewModel: ObservableObject {
         viewABackgroundColor = .clear
         viewABorderColor = .clear
         viewACornerRadius = 0
-        viewAPadding = 0
+        viewAPadding = 20
         viewABorderWidth = 0
         
         // ViewB 默认设置

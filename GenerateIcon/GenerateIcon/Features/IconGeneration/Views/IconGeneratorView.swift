@@ -9,6 +9,10 @@ struct IconGeneratorView: View {
     @State private var showingSizeSelection = false
     @State private var showingAIModal = false
     @State private var showingIconSelector = false
+    @State private var showingSaveConfirmation = false
+    @State private var showingSaveAlert = false
+    @State private var saveAlertMessage = ""
+    @State private var isSaving = false
     
     // 便捷访问全局ViewModel
     private var iconGenerator: IconGeneratorViewModel {
@@ -18,6 +22,47 @@ struct IconGeneratorView: View {
     // 使用全局状态作为选中的图标类型
     private var selectedIconType: IconType {
         iconGenerator.selectedPresetType
+    }
+    
+    // MARK: - 保存到相册
+    private func saveToPhotoLibrary() {
+        guard !isSaving else { return }
+        
+        isSaving = true
+        
+        Task {
+            do {
+                // 生成当前配置的图标
+                let service = IconGeneratorService()
+                let image = try await service.generatePreview(
+                    iconContent: globalViewModels.iconContent,
+                    previewConfig: globalViewModels.previewConfig
+                )
+                
+                // 保存到相册
+                let fileManager = FileManagerService()
+                try await fileManager.saveToPhotoLibrary(image)
+                
+                await MainActor.run {
+                    saveAlertMessage = "图标已成功保存到相册！"
+                    showingSaveAlert = true
+                    isSaving = false
+                }
+            } catch {
+                await MainActor.run {
+                    saveAlertMessage = "保存失败：\(error.localizedDescription)"
+                    showingSaveAlert = true
+                    isSaving = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - 打开相册
+    private func openPhotoLibrary() {
+        if let url = URL(string: "photos-redirect://") {
+            UIApplication.shared.open(url)
+        }
     }
     
     var body: some View {
@@ -71,11 +116,17 @@ struct IconGeneratorView: View {
                         
                         // 生成按钮
                         Button(action: {
-                            showingSizeSelection = true
+                            showingSaveConfirmation = true
                         }) {
                             HStack {
-                                Image(systemName: "paintbrush.fill")
-                                Text("生成并下载图标")
+                                if isSaving {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "paintbrush.fill")
+                                }
+                                Text(isSaving ? "生成中..." : "生成并下载图标")
                             }
                             .font(.headline)
                             .foregroundColor(.white)
@@ -89,7 +140,7 @@ struct IconGeneratorView: View {
                             )
                             .cornerRadius(12)
                         }
-                        .disabled(iconGenerator.isGenerating)
+                        .disabled(isSaving)
                         
                         if iconGenerator.isGenerating {
                             ProgressView("生成中... \(Int(iconGenerator.generationProgress * 100))%")
@@ -112,6 +163,19 @@ struct IconGeneratorView: View {
             .navigationTitle("图标生成器")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        // 打开相册
+                        if let url = URL(string: "photos-redirect://") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.title2)
+                            .foregroundColor(.accentColor)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
                         Button(action: {
@@ -141,6 +205,22 @@ struct IconGeneratorView: View {
             }
             .sheet(isPresented: $showingAppSettings) {
                 AppSettingsView()
+            }
+            .alert("确认保存", isPresented: $showingSaveConfirmation) {
+                Button("取消", role: .cancel) { }
+                Button("保存") {
+                    saveToPhotoLibrary()
+                }
+            } message: {
+                Text("是否将当前图标保存到相册？")
+            }
+            .alert("保存结果", isPresented: $showingSaveAlert) {
+                Button("确定", role: .cancel) { }
+                Button("打开相册") {
+                    openPhotoLibrary()
+                }
+            } message: {
+                Text(saveAlertMessage)
             }
         }
         .sheet(isPresented: $showingSizeSelection) {

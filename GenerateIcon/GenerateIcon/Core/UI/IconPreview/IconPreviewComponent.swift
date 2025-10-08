@@ -21,9 +21,8 @@ struct IconPreviewComponent: View {
         VStack(spacing: 16) {
             // 预览区域
             ZStack {
-                // 背景
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.1))
+                // 背景 - 使用棋盘格图案来显示透明度
+                CheckerboardBackground()
                     .frame(width: previewConfig.previewSize.width, height: previewConfig.previewSize.height)
                 
                 if isLoading {
@@ -61,12 +60,6 @@ struct IconPreviewComponent: View {
                 Text("预览 (\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height)))")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
-                Text("三层结构：ViewA(外框) + ViewB(容器) + ViewC(图标)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
             }
         }
         .onAppear {
@@ -187,6 +180,32 @@ struct IconPreviewComponent: View {
                 height: textSize.height
             )
             text.draw(in: textRect, withAttributes: attributes)
+        }
+    }
+}
+
+// MARK: - 棋盘格背景组件
+struct CheckerboardBackground: View {
+    let squareSize: CGFloat = 20
+    
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let columns = Int(width / squareSize) + 1
+            let rows = Int(height / squareSize) + 1
+            
+            HStack(spacing: 0) {
+                ForEach(0..<columns, id: \.self) { column in
+                    VStack(spacing: 0) {
+                        ForEach(0..<rows, id: \.self) { row in
+                            Rectangle()
+                                .fill((column + row) % 2 == 0 ? Color.white : Color.gray.opacity(0.3))
+                                .frame(width: squareSize, height: squareSize)
+                        }
+                    }
+                }
+            }
         }
     }
 }

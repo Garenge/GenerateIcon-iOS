@@ -176,7 +176,17 @@ class IconGeneratorService: ObservableObject {
         iconContent: IconContentViewModel,
         previewConfig: PreviewConfigViewModel
     ) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: previewConfig.previewSize)
+        print("🔄 IconGeneratorService: renderIconWithThreeLayers STARTED!")
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false  // 支持透明度
+        format.scale = 1.0    // 使用设备像素比例
+        
+        print("🔄 IconGeneratorService: renderIconWithThreeLayers - format.opaque=\(format.opaque)")
+        print("🔄 IconGeneratorService: ViewA background=\(previewConfig.viewABackgroundColor)")
+        print("🔄 IconGeneratorService: ViewB background=\(previewConfig.viewBBackgroundColor)")
+        
+        let renderer = UIGraphicsImageRenderer(size: previewConfig.previewSize, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
@@ -282,6 +292,8 @@ class IconGeneratorService: ObservableObject {
         scale: CGFloat,
         viewBArea: CGRect
     ) {
+        print("🔄 IconGeneratorService: drawViewC called with contentType=\(iconContent.contentType), presetType=\(iconContent.selectedPresetType.displayName)")
+        
         let padding = previewConfig.viewBPadding * scale
         let iconArea = CGRect(
             x: viewBArea.minX + padding,
@@ -320,7 +332,11 @@ class IconGeneratorService: ObservableObject {
     
     // MARK: - 生成文字图标
     private func generateTextIcon(config: TextIconConfigViewModel, size: CGSize) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false  // 支持透明度
+        format.scale = 1.0    // 使用设备像素比例
+        
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
@@ -394,7 +410,11 @@ class IconGeneratorService: ObservableObject {
     // MARK: - 生成简单图标（回退方案）
     private func generateSimpleIcon(type: IconType, size: CGSize) -> UIImage {
         print("🔄 IconGeneratorService: Generating simple icon for type=\(type.displayName), size=\(size)")
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false  // 支持透明度
+        format.scale = 1.0    // 使用设备像素比例
+        
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
