@@ -10,14 +10,9 @@ class CalculatorIconGenerator: BaseIconGenerator {
         
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let image = self.renderCalculatorIcon(size: size, settings: settings)
-                    print("🧮 CalculatorIconGenerator: Calculator icon generated successfully")
-                    continuation.resume(returning: image)
-                } catch {
-                    print("🧮 CalculatorIconGenerator: Error generating calculator icon: \(error)")
-                    continuation.resume(throwing: error)
-                }
+                let image = self.renderCalculatorIcon(size: size, settings: settings)
+                print("🧮 CalculatorIconGenerator: Calculator icon generated successfully")
+                continuation.resume(returning: image)
             }
         }
     }

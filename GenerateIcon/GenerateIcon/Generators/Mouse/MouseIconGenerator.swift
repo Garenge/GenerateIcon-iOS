@@ -10,14 +10,9 @@ class MouseIconGenerator: BaseIconGenerator {
         
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let image = self.renderMouseIcon(size: size, settings: settings)
-                    print("🖱️ MouseIconGenerator: Mouse icon generated successfully")
-                    continuation.resume(returning: image)
-                } catch {
-                    print("🖱️ MouseIconGenerator: Error generating mouse icon: \(error)")
-                    continuation.resume(throwing: error)
-                }
+                let image = self.renderMouseIcon(size: size, settings: settings)
+                print("🖱️ MouseIconGenerator: Mouse icon generated successfully")
+                continuation.resume(returning: image)
             }
         }
     }

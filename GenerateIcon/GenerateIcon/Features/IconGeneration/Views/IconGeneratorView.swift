@@ -1,13 +1,24 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 图标生成主视图
 struct IconGeneratorView: View {
-    @StateObject private var viewModel = IconGeneratorViewModel()
-    @State private var selectedIconType: IconType = .calculator
+    @EnvironmentObject var globalViewModels: GlobalIconViewModels
     @State private var showingSettings = false
+    @State private var showingAppSettings = false
     @State private var showingSizeSelection = false
     @State private var showingAIModal = false
     @State private var showingIconSelector = false
+    
+    // 便捷访问全局ViewModel
+    private var iconGenerator: IconGeneratorViewModel {
+        globalViewModels.iconGenerator
+    }
+    
+    // 使用全局状态作为选中的图标类型
+    private var selectedIconType: IconType {
+        iconGenerator.selectedPresetType
+    }
     
     var body: some View {
         NavigationView {
@@ -16,12 +27,17 @@ struct IconGeneratorView: View {
                     // 左侧：图标类型选择
                     if geometry.size.width > 800 {
                         IconTypeSelectorView(
-                            selectedType: $selectedIconType,
+                            selectedType: selectedIconType,
                             onAITap: { showingAIModal = true },
-                            isInAIMode: viewModel.isInAIMode,
+                            isInAIMode: iconGenerator.isInAIMode,
                             onExitAI: {
-                                viewModel.clearAIIcon()
-                                viewModel.refreshPreview()
+                                iconGenerator.clearAIIcon()
+                                iconGenerator.refreshPreview()
+                            },
+                            onPresetSelected: { newType in
+                                // 选择预设图标时更新全局状态并刷新预览
+                                globalViewModels.setPresetIcon(newType)
+                                print("🔄 IconGeneratorView: Preset icon changed to \(newType.displayName)")
                             }
                         )
                         .frame(width: 200)
@@ -36,49 +52,22 @@ struct IconGeneratorView: View {
                                 showingIconSelector = true
                             }) {
                                 HStack {
-                                    Text(viewModel.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
+                                    Text(iconGenerator.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
                                         .font(.headline)
                                     Spacer()
                                     Image(systemName: "chevron.down")
                                 }
                                 .padding()
-                                .background(viewModel.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
+                                .background(iconGenerator.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
                                 .cornerRadius(8)
                             }
-                            .foregroundColor(viewModel.isInAIMode ? .orange : .blue)
+                            .foregroundColor(iconGenerator.isInAIMode ? .orange : .blue)
                         }
                         
                         // 预览区域
-                        if let aiIcon = viewModel.lastGeneratedIcon {
-                            IconPreviewComponent(
-                                config: IconPreviewConfig(
-                                    iconType: selectedIconType,
-                                    settings: viewModel.settings,
-                                    isLoading: viewModel.isGenerating,
-                                    errorMessage: viewModel.errorMessage,
-                                    customIcon: aiIcon,
-                                    showRegenerateButton: true,
-                                    onRegenerate: {
-                                        showingAIModal = true
-                                    },
-                                    previewSize: CGSize(width: 256, height: 256),
-                                    showPreviewInfo: true
-                                )
-                            )
-                            .id("preview-\(selectedIconType.rawValue)-ai")
-                        } else {
-                            IconPreviewComponent(
-                                config: IconPreviewConfig(
-                                    iconType: selectedIconType,
-                                    settings: viewModel.settings,
-                                    isLoading: viewModel.isGenerating,
-                                    errorMessage: viewModel.errorMessage,
-                                    previewSize: CGSize(width: 256, height: 256),
-                                    showPreviewInfo: true
-                                )
-                            )
-                            .id("preview-\(selectedIconType.rawValue)-preset")
-                        }
+                        IconPreviewComponent(iconContent: globalViewModels.iconContent, previewConfig: globalViewModels.previewConfig)
+                            .frame(width: 256, height: 256)
+                            .id("preview-\(iconGenerator.selectedPresetType.rawValue)-\(iconGenerator.contentType == .text ? "text" : "preset")-\(iconGenerator.isInAIMode ? "ai" : "preset")")
                         
                         // 生成按钮
                         Button(action: {
@@ -100,10 +89,10 @@ struct IconGeneratorView: View {
                             )
                             .cornerRadius(12)
                         }
-                        .disabled(viewModel.isGenerating)
+                        .disabled(iconGenerator.isGenerating)
                         
-                        if viewModel.isGenerating {
-                            ProgressView("生成中... \(Int(viewModel.generationProgress * 100))%")
+                        if iconGenerator.isGenerating {
+                            ProgressView("生成中... \(Int(iconGenerator.generationProgress * 100))%")
                                 .progressViewStyle(LinearProgressViewStyle())
                         }
                     }
@@ -112,14 +101,9 @@ struct IconGeneratorView: View {
                     // 右侧：设置面板
                     if geometry.size.width > 1000 {
                         SettingsPanelView(
-                            settings: $viewModel.settings,
-                            isVisible: $showingSettings,
-                            currentIconType: selectedIconType,
-                            onSettingsChanged: {
-                                print("🔄 Settings changed, refreshing preview")
-                                viewModel.refreshPreview()
-                            },
-                            customIcon: viewModel.lastGeneratedIcon
+                            iconContent: globalViewModels.iconContent,
+                            previewConfig: globalViewModels.previewConfig,
+                            isVisible: $showingSettings
                         )
                         .frame(width: 300)
                     }
@@ -129,39 +113,43 @@ struct IconGeneratorView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingSettings.toggle()
-                    }) {
-                        Image(systemName: "gearshape.fill")
+                    HStack {
+                        Button(action: {
+                            showingAppSettings.toggle()
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
+                        
+                        Button(action: {
+                            showingSettings.toggle()
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsPanelView(
-                    settings: $viewModel.settings,
-                    isVisible: $showingSettings,
-                    currentIconType: selectedIconType,
-                    onSettingsChanged: {
-                        // 设置变化时立即触发预览刷新
-                        print("🔄 Settings changed, refreshing preview")
-                        viewModel.refreshPreview()
-                    },
-                    customIcon: viewModel.lastGeneratedIcon
+                    iconContent: globalViewModels.iconContent,
+                    previewConfig: globalViewModels.previewConfig,
+                    isVisible: $showingSettings
                 )
-                .onDisappear {
-                    // 设置面板关闭时也触发预览刷新
-                    print("🔄 Settings panel closed, refreshing preview")
-                    viewModel.refreshPreview()
-                }
+            }
+            .sheet(isPresented: $showingAppSettings) {
+                AppSettingsView()
             }
         }
         .sheet(isPresented: $showingSizeSelection) {
             SizeSelectionView(
                 iconType: selectedIconType,
-                settings: viewModel.settings,
+                settings: IconSettings(), // 使用默认设置，因为现在设置已经整合到iconGenerator中
                 onGenerate: { size, downloadType in
                     Task {
-                        await viewModel.generateIcon(
+                        await iconGenerator.generateIcon(
                             type: selectedIconType,
                             size: size,
                             downloadType: downloadType
@@ -172,53 +160,53 @@ struct IconGeneratorView: View {
         }
         .sheet(isPresented: $showingAIModal) {
             AIGeneratorView(
-                settings: $viewModel.settings,
+                settings: Binding<IconSettings>(
+                    get: { iconGenerator.getIconSettings() },
+                    set: { iconGenerator.updateIconSettings($0) }
+                ),
                 onGenerate: { prompt, aiSettings in
                     Task {
-                        await viewModel.generateAIIcon(
+                        await iconGenerator.generateAIIcon(
                             prompt: prompt,
                             settings: aiSettings
                         )
+                        // Set the AI generated image as custom icon
+                        if let aiImage = iconGenerator.lastGeneratedIcon {
+                            globalViewModels.setCustomIcon(aiImage)
+                        }
                     }
                 }
             )
         }
         .sheet(isPresented: $showingIconSelector) {
             IconSelectorView(
-                selectedType: $selectedIconType,
-                onAITap: { 
+                selectedType: selectedIconType,
+                onAITap: {
                     showingIconSelector = false
                     showingAIModal = true
                 },
-                isInAIMode: viewModel.isInAIMode,
+                isInAIMode: iconGenerator.isInAIMode,
                 onExitAI: {
-                    viewModel.clearAIIcon()
-                    viewModel.refreshPreview()
+                    iconGenerator.clearAIIcon()
+                    iconGenerator.refreshPreview()
                 },
-                onPresetSelected: {
-                    // 选择预设图标时刷新预览
-                    viewModel.refreshPreview()
+                onPresetSelected: { newType in
+                    // 选择预设图标时更新全局状态并刷新预览
+                    globalViewModels.setPresetIcon(newType)
+                    print("🔄 IconGeneratorView: Preset icon changed to \(newType.displayName)")
                 }
             )
         }
-        .onChange(of: selectedIconType) { newType in
-            // 图标类型改变时刷新预览
-            print("🔄 IconGeneratorView: Icon type changed to: \(newType.name)")
-            // 清除AI生成的图标，切换到预设图标预览
-            viewModel.clearAIIcon()
-            // 立即触发UI更新，不延迟
-            viewModel.refreshPreview()
-        }
         .onAppear {
-            viewModel.loadSettings()
+            iconGenerator.loadSettings()
         }
-        .alert("保存到相册", isPresented: $viewModel.showingSaveConfirmation) {
+        .alert("保存到相册", isPresented: $globalViewModels.iconGenerator.showingSaveConfirmation) {
             Button("取消", role: .cancel) {
-                viewModel.cancelSave()
+                iconGenerator.cancelSave()
             }
             Button("保存") {
                 Task {
-                    await viewModel.confirmSaveToPhotoLibrary()
+                    await iconGenerator.confirmSaveToPhotoLibrary()
                 }
             }
         } message: {
@@ -230,10 +218,11 @@ struct IconGeneratorView: View {
 
 // MARK: - 图标类型选择器
 struct IconTypeSelectorView: View {
-    @Binding var selectedType: IconType
+    let selectedType: IconType
     let onAITap: () -> Void
     let isInAIMode: Bool
     let onExitAI: () -> Void
+    let onPresetSelected: (IconType) -> Void // New closure for preset selection
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -258,7 +247,9 @@ struct IconTypeSelectorView: View {
                                     IconTypeButton(
                                         type: type,
                                         isSelected: selectedType == type,
-                                        onTap: { selectedType = type }
+                                        onTap: {
+                                            onPresetSelected(type) // Call the new closure
+                                        }
                                     )
                                 }
                             }

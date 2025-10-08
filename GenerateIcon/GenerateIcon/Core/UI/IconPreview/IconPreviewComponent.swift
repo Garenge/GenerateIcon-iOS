@@ -1,23 +1,32 @@
 import SwiftUI
 
-/// 封装的图标预览组件
+// MARK: - 预览组件
 struct IconPreviewComponent: View {
-    let config: IconPreviewConfig
-    
+    @ObservedObject var iconContent: IconContentViewModel
+    @ObservedObject var previewConfig: PreviewConfigViewModel
     @State private var previewImage: UIImage?
-    @State private var currentIconType: IconType?
+    @State private var isLoading: Bool = false
     @State private var currentTask: Task<Void, Never>?
+    
+    init(iconContent: IconContentViewModel, previewConfig: PreviewConfigViewModel) {
+        self.iconContent = iconContent
+        self.previewConfig = previewConfig
+        print("🔄 IconPreviewComponent: Initialized with contentType=\(iconContent.contentType), presetType=\(iconContent.selectedPresetType.displayName)")
+        print("🔄 IconPreviewComponent: PreviewConfig size=\(previewConfig.previewSize)")
+        print("🔄 IconPreviewComponent: IconContent objectId=\(ObjectIdentifier(iconContent))")
+        print("🔄 IconPreviewComponent: PreviewConfig objectId=\(ObjectIdentifier(previewConfig))")
+    }
     
     var body: some View {
         VStack(spacing: 16) {
-            // 图标预览区域
+            // 预览区域
             ZStack {
                 // 背景
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.gray.opacity(0.1))
-                    .frame(width: config.previewSize.width, height: config.previewSize.height)
+                    .frame(width: previewConfig.previewSize.width, height: previewConfig.previewSize.height)
                 
-                if config.isLoading {
+                if isLoading {
                     // 加载状态
                     VStack {
                         ProgressView()
@@ -27,27 +36,12 @@ struct IconPreviewComponent: View {
                             .foregroundColor(.secondary)
                             .padding(.top, 8)
                     }
-                } else if let errorMessage = config.errorMessage {
-                    // 错误状态
-                    VStack {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 40))
-                            .foregroundColor(.red)
-                        Text("生成失败")
-                            .font(.headline)
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
                 } else if let previewImage = previewImage {
-                    // 预设图标
+                    // 预览图片
                     Image(uiImage: previewImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: config.previewSize.width * 0.8, height: config.previewSize.height * 0.8)
+                        .frame(width: previewConfig.previewSize.width * 0.8, height: previewConfig.previewSize.height * 0.8)
                         .cornerRadius(8)
                 } else {
                     // 默认状态
@@ -62,113 +56,144 @@ struct IconPreviewComponent: View {
                 }
             }
             
-            // 重新生成按钮（AI图标时显示）
-            if config.customIcon != nil && config.showRegenerateButton {
-                Button(action: {
-                    config.onRegenerate?()
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                        Text("重新生成")
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundColor(.blue)
-                    .cornerRadius(6)
-                }
-            }
-            
             // 预览信息
-            if config.showPreviewInfo {
-                VStack(spacing: 4) {
-                    Text("预览 (\(Int(config.previewSize.width))x\(Int(config.previewSize.height)))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("点击按钮将生成一个1024x1024像素的\(config.iconType.displayName)图标并自动下载")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
+            VStack(spacing: 4) {
+                Text("预览 (\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height)))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Text("三层结构：ViewA(外框) + ViewB(容器) + ViewC(图标)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
         }
         .onAppear {
-            loadPreview()
+            print("🔄 IconPreviewComponent: onAppear triggered")
+            print("🔄 IconPreviewComponent: iconContent contentType=\(iconContent.contentType), presetType=\(iconContent.selectedPresetType.displayName)")
+            print("🔄 IconPreviewComponent: previewConfig size=\(previewConfig.previewSize)")
+            generatePreview()
         }
-        .onChange(of: config.iconType) { newType in
-            loadPreview()
+        .onChange(of: previewConfig.viewABackgroundColor) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewABorderColor) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewACornerRadius) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewAPadding) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewABorderWidth) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBBackgroundColor) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBBorderColor) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBCornerRadius) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBPadding) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBBorderWidth) { _ in generatePreview() }
+        .onChange(of: previewConfig.viewBShadowIntensity) { _ in generatePreview() }
+        .onChange(of: previewConfig.iconScale) { _ in generatePreview() }
+        .onChange(of: previewConfig.iconRotation) { _ in generatePreview() }
+        .onChange(of: previewConfig.iconOpacity) { _ in generatePreview() }
+        .onChange(of: iconContent.contentType) { newType in 
+            print("🔄 IconPreviewComponent: Content type changed to \(newType)")
+            generatePreview() 
         }
-        .onChange(of: config.settings) { _ in
-            loadPreview()
+        .onChange(of: iconContent.selectedPresetType) { newType in 
+            print("🔄 IconPreviewComponent: Preset type changed to \(newType.displayName)")
+            generatePreview() 
         }
-        // 订阅设置变更全局通知，立即重载预览
-        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
-            loadPreview()
+        .onChange(of: iconContent.customImage) { _ in 
+            print("🔄 IconPreviewComponent: Custom image changed")
+            generatePreview() 
         }
+        .onChange(of: iconContent.textConfig.isEnabled) { _ in generatePreview() }
+        .onChange(of: iconContent.textConfig.text) { _ in generatePreview() }
+        .onChange(of: iconContent.textConfig.fontSize) { _ in generatePreview() }
+        .onChange(of: iconContent.textConfig.textColor) { _ in generatePreview() }
+        .onChange(of: iconContent.textConfig.customFontSize) { _ in generatePreview() }
     }
     
-    private func loadPreview() {
+    private func generatePreview() {
         // 取消之前的任务
         currentTask?.cancel()
         
-        // 设置当前图标类型
-        currentIconType = config.iconType
+        print("🔄 IconPreviewComponent: Starting preview generation for \(iconContent.contentType) - \(iconContent.selectedPresetType.displayName)")
         
-        // 清除之前的预览
+        isLoading = true
         previewImage = nil
         
-        // 生成预览
-        let expectedType = config.iconType
         currentTask = Task {
-            await generatePreview(targetIconType: expectedType)
+            await generatePreviewAsync()
         }
     }
     
     @MainActor
-    private func generatePreview(targetIconType: IconType) async {
-        
+    private func generatePreviewAsync() async {
         do {
+            print("🔄 IconPreviewComponent: Calling IconGeneratorService.generatePreview")
             let service = IconGeneratorService()
-            let image: UIImage
-            if let custom = config.customIcon {
-                // 组合自定义(透明文字)图与当前设置的背景/圆角等，保证与设置一致
-                image = try await service.composePreview(
-                    with: custom,
-                    size: config.previewSize,
-                    settings: config.settings
-                )
-            } else {
-                image = try await service.generatePreview(
-                    type: targetIconType,
-                    size: config.previewSize,
-                    settings: config.settings
-                )
+            let image = try await service.generatePreview(
+                iconContent: iconContent,
+                previewConfig: previewConfig
+            )
+            
+            guard !Task.isCancelled else { 
+                print("🔄 IconPreviewComponent: Task was cancelled")
+                return 
             }
             
-            // 检查任务是否被取消或图标类型是否已改变
-            guard !Task.isCancelled && config.iconType == targetIconType else { return }
-            
+            print("🔄 IconPreviewComponent: Preview generated successfully, image size=\(image.size)")
             previewImage = image
+            isLoading = false
         } catch {
-            // 检查任务是否被取消或图标类型是否已改变
-            guard !Task.isCancelled && config.iconType == targetIconType else { return }
+            guard !Task.isCancelled else { 
+                print("🔄 IconPreviewComponent: Task was cancelled during error handling")
+                return 
+            }
             
-            print("生成预览失败: \(error)")
+            print("🔄 IconPreviewComponent: Preview generation failed: \(error)")
+            isLoading = false
+            
+            // 创建一个测试图标作为后备
+            print("🔄 IconPreviewComponent: Creating fallback test image")
+            let testImage = createTestImage()
+            previewImage = testImage
+        }
+    }
+    
+    // MARK: - 创建测试图标
+    private func createTestImage() -> UIImage {
+        let size = CGSize(width: 256, height: 256)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            
+            // 设置背景色
+            cgContext.setFillColor(UIColor.systemBlue.cgColor)
+            cgContext.fill(CGRect(origin: .zero, size: size))
+            
+            // 绘制一个简单的测试图标
+            cgContext.setFillColor(UIColor.white.cgColor)
+            let iconRect = CGRect(x: 64, y: 64, width: 128, height: 128)
+            cgContext.fill(iconRect)
+            
+            // 绘制文字
+            let text = "TEST"
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 32, weight: .bold),
+                .foregroundColor: UIColor.systemBlue
+            ]
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (size.width - textSize.width) / 2,
+                y: (size.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            text.draw(in: textRect, withAttributes: attributes)
         }
     }
 }
 
 #Preview {
-    IconPreviewComponent(
-        config: IconPreviewConfig(
-            iconType: .heart,
-            settings: IconSettings(),
-            isLoading: false,
-            showPreviewInfo: true
-        )
-    )
-    .padding()
+    let iconContent = IconContentViewModel()
+    let previewConfig = PreviewConfigViewModel()
+    return IconPreviewComponent(iconContent: iconContent, previewConfig: previewConfig)
+        .padding()
 }

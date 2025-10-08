@@ -6,6 +6,7 @@ struct AIGeneratorView: View {
     @Binding var settings: IconSettings
     let onGenerate: (String, AISettings) -> Void
     
+    @EnvironmentObject var globalViewModels: GlobalIconViewModels
     @State private var prompt = ""
     @State private var aiSettings = AISettings()
     @State private var showingTextSettings = false
@@ -14,23 +15,49 @@ struct AIGeneratorView: View {
     
     @Environment(\.dismiss) private var dismiss
     
+    // 便捷访问全局ViewModel
+    private var iconContent: IconContentViewModel {
+        globalViewModels.iconContent
+    }
+    
+    private var previewConfig: PreviewConfigViewModel {
+        globalViewModels.previewConfig
+    }
+    
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // 提示词输入
-                    promptInputSection
+            VStack(spacing: 0) {
+                // 上半部分：固定的图标预览区域
+                VStack(spacing: 16) {
+                    Text("当前图标预览")
+                        .font(.headline)
+                        .fontWeight(.semibold)
                     
-                    // 示例标签
-                    examplesSection
-                    
-                    // 文字设置模块
-                    textSettingsSection
-                    
-                    // 操作按钮
-                    actionButtons
+                    SimpleIconPreview()
+                        .frame(height: 200)
                 }
                 .padding()
+                .background(Color.gray.opacity(0.05))
+                
+                Divider()
+                
+                // 下半部分：滚动视图包含输入和设置
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // 提示词输入
+                        promptInputSection
+                        
+                        // 示例标签
+                        examplesSection
+                        
+                        // 文字设置模块
+                        textSettingsSection
+                        
+                        // 操作按钮
+                        actionButtons
+                    }
+                    .padding()
+                }
             }
             .navigationTitle("🎨 AI图标生成")
             .navigationBarTitleDisplayMode(.inline)
@@ -153,9 +180,6 @@ struct AIGeneratorView: View {
                     
                     // 文字设置
                     textSettings
-                    
-                    // 实时预览
-                    previewSection
                 }
                 .padding()
                 .background(Color(.systemGray6))
@@ -265,41 +289,6 @@ struct AIGeneratorView: View {
         }
     }
     
-    // MARK: - 预览区域
-    private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("🔍 实时预览")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-            
-            // 直接显示AI生成的预览图标，确保实时响应设置变化
-            ZStack {
-                // 背景
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.1))
-                    .frame(width: 256, height: 256)
-                
-                if let previewIcon = previewIcon {
-                    // AI生成的预览图片
-                    Image(uiImage: previewIcon)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 230, height: 230)
-                        .cornerRadius(8)
-                } else {
-                    // 默认状态
-                    VStack {
-                        Image(systemName: "photo")
-                            .font(.system(size: 40))
-                            .foregroundColor(.gray)
-                        Text("暂无预览")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-        }
-    }
     
     // MARK: - 生成预览图标
     private func generatePreviewIcon() async -> UIImage? {

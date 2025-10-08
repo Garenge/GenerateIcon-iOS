@@ -23,13 +23,8 @@ struct ComponentResponsivenessTestView: View {
                         .font(.headline)
                     
                     IconPreviewComponent(
-                        config: IconPreviewConfig(
-                            iconType: testIconType,
-                            settings: testSettings,
-                            isLoading: false,
-                            previewSize: CGSize(width: 150, height: 150),
-                            showPreviewInfo: true
-                        )
+                        iconContent: IconContentViewModel(),
+                        previewConfig: PreviewConfigViewModel()
                     )
                     
                     // 控制按钮

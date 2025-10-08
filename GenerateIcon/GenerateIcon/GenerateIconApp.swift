@@ -12,6 +12,7 @@ struct GenerateIconApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .withGlobalIconViewModels()
         }
     }
 }

@@ -2,17 +2,42 @@ import Foundation
 import SwiftUI
 import Combine
 
-// MARK: - 图标生成视图模型
+// MARK: - 统一的图标生成ViewModel
 class IconGeneratorViewModel: ObservableObject {
-    @Published var settings = IconSettings()
+    // MARK: - 核心状态
     @Published var isGenerating = false
     @Published var generationProgress: Double = 0.0
     @Published var showingSaveConfirmation = false
     @Published var pendingImage: UIImage?
     @Published var lastGeneratedIcon: UIImage?
     @Published var errorMessage: String?
-    @Published var isInAIMode = false // 添加AI模式状态
     
+    // MARK: - 图标内容状态（整合自IconContentViewModel）
+    @Published var contentType: IconContentType = .preset
+    @Published var selectedPresetType: IconType = .calculator
+    @Published var customImage: UIImage?
+    @Published var textConfig: TextIconConfigViewModel = TextIconConfigViewModel()
+    
+    // MARK: - 预览配置状态（整合自PreviewConfigViewModel）
+    @Published var viewABackgroundColor: Color = .clear
+    @Published var viewABorderColor: Color = .clear
+    @Published var viewACornerRadius: CGFloat = 0
+    @Published var viewAPadding: CGFloat = 0
+    @Published var viewABorderWidth: CGFloat = 0
+    
+    @Published var viewBBackgroundColor: Color = Color(red: 0.4, green: 0.49, blue: 0.92)
+    @Published var viewBBorderColor: Color = .clear
+    @Published var viewBCornerRadius: CGFloat = 40
+    @Published var viewBPadding: CGFloat = 20
+    @Published var viewBBorderWidth: CGFloat = 0
+    @Published var viewBShadowIntensity: CGFloat = 20
+    
+    @Published var iconScale: CGFloat = 1.0
+    @Published var iconRotation: CGFloat = 0
+    @Published var iconOpacity: CGFloat = 1.0
+    @Published var previewSize: CGSize = CGSize(width: 256, height: 256)
+    
+    // MARK: - 服务依赖
     private let iconGeneratorService = IconGeneratorService()
     private let fileManagerService = FileManagerService()
     private let settingsService = SettingsService()
@@ -20,6 +45,84 @@ class IconGeneratorViewModel: ObservableObject {
     
     init() {
         setupBindings()
+    }
+    
+    // MARK: - 计算属性
+    var currentIconImage: UIImage? {
+        switch contentType {
+        case .preset:
+            return nil // 预设图标由生成服务处理
+        case .custom:
+            return customImage
+        case .text:
+            return nil // 文字图标由生成服务处理
+        }
+    }
+    
+    var isUsingPresetIcon: Bool {
+        contentType == .preset
+    }
+    
+    var isUsingCustomIcon: Bool {
+        contentType == .custom && customImage != nil
+    }
+    
+    var isUsingTextIcon: Bool {
+        contentType == .text && textConfig.isEnabled
+    }
+    
+    var isInAIMode: Bool {
+        contentType == .custom && customImage != nil
+    }
+    
+    // MARK: - 图标内容管理方法
+    func setPresetIcon(_ type: IconType) {
+        contentType = .preset
+        selectedPresetType = type
+        customImage = nil
+        textConfig.disableTextIcon()
+    }
+    
+    func setCustomIcon(_ image: UIImage?) {
+        contentType = .custom
+        customImage = image
+        textConfig.disableTextIcon()
+    }
+    
+    func setTextIcon(_ config: TextIconConfigViewModel) {
+        contentType = .text
+        textConfig = config
+        customImage = nil
+    }
+    
+    func clearAll() {
+        contentType = .preset
+        selectedPresetType = .calculator
+        customImage = nil
+        textConfig.resetToDefaults()
+    }
+    
+    // MARK: - 预览配置管理方法
+    func resetPreviewToDefaults() {
+        // ViewA 默认设置
+        viewABackgroundColor = .clear
+        viewABorderColor = .clear
+        viewACornerRadius = 0
+        viewAPadding = 0
+        viewABorderWidth = 0
+        
+        // ViewB 默认设置
+        viewBBackgroundColor = Color(red: 0.4, green: 0.49, blue: 0.92)
+        viewBBorderColor = .clear
+        viewBCornerRadius = 40
+        viewBPadding = 20
+        viewBBorderWidth = 0
+        viewBShadowIntensity = 20
+        
+        // ViewC 默认设置
+        iconScale = 1.0
+        iconRotation = 0
+        iconOpacity = 1.0
     }
     
     // MARK: - 生成图标
@@ -39,7 +142,7 @@ class IconGeneratorViewModel: ObservableObject {
         
         do {
             if downloadType == .ios {
-                try await generateIOSIconSet(type: type, settings: settings)
+                try await generateIOSIconSet(type: type)
             } else {
                 try await generateSingleIcon(type: type, size: size)
             }
@@ -62,7 +165,6 @@ class IconGeneratorViewModel: ObservableObject {
             isGenerating = true
             generationProgress = 0.0
             errorMessage = nil
-            isInAIMode = true // 设置为AI模式
         }
         
         // 显示AI生成开始的Toast
@@ -81,7 +183,7 @@ class IconGeneratorViewModel: ObservableObject {
             let finalIcon = try await iconGeneratorService.composePreview(
                 with: aiIcon,
                 size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                settings: settings // 使用当前的背景设置
+                settings: self.createIconSettings() // 使用当前的背景设置
             )
             try await fileManagerService.saveToPhotoLibrary(finalIcon)
             
@@ -101,7 +203,10 @@ class IconGeneratorViewModel: ObservableObject {
     // MARK: - 清除AI图标
     func clearAIIcon() {
         lastGeneratedIcon = nil
-        isInAIMode = false // 退出AI模式
+        if contentType == .custom {
+            contentType = .preset
+            customImage = nil
+        }
     }
     
     // MARK: - 生成预览
@@ -113,7 +218,7 @@ class IconGeneratorViewModel: ObservableObject {
             return try await iconGeneratorService.generatePreview(
                 type: type,
                 size: size,
-                settings: settings
+                settings: createIconSettings()
             )
         } catch {
             await MainActor.run {
@@ -125,36 +230,72 @@ class IconGeneratorViewModel: ObservableObject {
     
     // MARK: - 保存设置
     func saveSettings() {
-        settingsService.saveSettings(settings)
+        settingsService.saveSettings(createIconSettings())
     }
     
     // MARK: - 加载设置
     func loadSettings() {
-        settings = settingsService.loadSettings()
+        let settings = settingsService.loadSettings()
+        applyIconSettings(settings)
     }
     
     // MARK: - 重置设置
     func resetSettings() {
-        settings = IconSettings()
+        resetPreviewToDefaults()
         saveSettings()
+    }
+    
+    // MARK: - 刷新预览
+    func refreshPreview() {
+        // 触发预览刷新
+        print("🔄 IconGeneratorViewModel: Refreshing preview")
+        
+        // 立即触发UI更新
+        DispatchQueue.main.async { [weak self] in
+            self?.objectWillChange.send()
+        }
     }
     
     // MARK: - 私有方法
     private func setupBindings() {
         // 监听设置变化，自动保存
-        $settings
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.saveSettings()
-            }
-            .store(in: &cancellables)
+        Publishers.MergeMany(
+            $viewACornerRadius,
+            $viewAPadding,
+            $viewABorderWidth,
+            $viewBCornerRadius,
+            $viewBPadding,
+            $viewBBorderWidth,
+            $viewBShadowIntensity,
+            $iconScale,
+            $iconRotation,
+            $iconOpacity
+        )
+        .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+        .sink { [weak self] _ in
+            self?.saveSettings()
+        }
+        .store(in: &cancellables)
+        
+        // 监听颜色变化
+        Publishers.MergeMany(
+            $viewABackgroundColor,
+            $viewABorderColor,
+            $viewBBackgroundColor,
+            $viewBBorderColor
+        )
+        .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+        .sink { [weak self] _ in
+            self?.saveSettings()
+        }
+        .store(in: &cancellables)
     }
     
     private func generateSingleIcon(type: IconType, size: CGSize) async throws {
         let image = try await iconGeneratorService.generateIcon(
             type: type,
             size: size,
-            settings: settings
+            settings: createIconSettings()
         )
         
         await MainActor.run {
@@ -177,26 +318,26 @@ class IconGeneratorViewModel: ObservableObject {
                 image = try await iconGeneratorService.composePreview(
                     with: aiIcon,
                     size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                    settings: settings // 使用当前的背景设置
+                    settings: createIconSettings() // 使用当前的背景设置
                 )
             } else if let pendingImage = pendingImage {
                 // 预设模式：保存预设图+当前背景设置的合成图（ViewA+ViewB+ViewC）
                 image = try await iconGeneratorService.composePreview(
                     with: pendingImage,
                     size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                    settings: settings // 使用当前的背景设置
+                    settings: createIconSettings() // 使用当前的背景设置
                 )
             } else {
                 // 兜底：生成当前预设图+背景设置的合成图
                 let presetIcon = try await iconGeneratorService.generateIcon(
-                    type: selectedIconType ?? .calculator,
+                    type: selectedPresetType,
                     size: CGSize(width: 1024, height: 1024),
                     settings: IconSettings() // 生成纯预设图
                 )
                 image = try await iconGeneratorService.composePreview(
                     with: presetIcon,
                     size: CGSize(width: 1024, height: 1024),
-                    settings: settings // 应用当前背景设置
+                    settings: createIconSettings() // 应用当前背景设置
                 )
             }
             
@@ -221,13 +362,13 @@ class IconGeneratorViewModel: ObservableObject {
         pendingImage = nil
     }
     
-    private func generateIOSIconSet(type: IconType, settings: IconSettings) async throws {
+    private func generateIOSIconSet(type: IconType) async throws {
         // 显示生成图标集的HUD
         HUDToastManager.shared.showLoading(message: "正在生成iOS图标集...")
         
         let urls = try await iconGeneratorService.generateIOSIconSet(
             type: type,
-            settings: settings
+            settings: createIconSettings()
         )
         
         // 更新进度并显示压缩包生成
@@ -283,14 +424,56 @@ class IconGeneratorViewModel: ObservableObject {
         }
     }
     
-    func refreshPreview() {
-        // 触发预览刷新
-        print("🔄 IconGeneratorViewModel: Refreshing preview")
+    // MARK: - 辅助方法
+    private func createIconSettings() -> IconSettings {
+        var settings = IconSettings()
         
-        // 立即触发UI更新
-        DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
-        }
+        // 应用当前预览配置到IconSettings
+        settings.backgroundColor = ColorData(color: viewBBackgroundColor)
+        settings.cornerRadius = viewBCornerRadius
+        settings.iconPadding = viewBPadding
+        settings.shadowIntensity = viewBShadowIntensity
+        settings.borderWidth = viewBBorderWidth
+        settings.borderColor = ColorData(color: viewBBorderColor)
+        
+        settings.backgroundAColor = ColorData(color: viewABackgroundColor)
+        settings.backgroundABorderWidth = viewABorderWidth
+        settings.backgroundAPadding = viewAPadding
+        
+        return settings
+    }
+    
+    private func applyIconSettings(_ settings: IconSettings) {
+        viewBBackgroundColor = settings.backgroundColor.color
+        viewBCornerRadius = settings.cornerRadius
+        viewBPadding = settings.iconPadding
+        viewBShadowIntensity = settings.shadowIntensity
+        viewBBorderWidth = settings.borderWidth
+        viewBBorderColor = settings.borderColor.color
+        
+        viewABackgroundColor = settings.backgroundAColor.color
+        viewABorderWidth = settings.backgroundABorderWidth
+        viewAPadding = settings.backgroundAPadding
+    }
+    
+    // MARK: - 公开方法（用于绑定）
+    func getIconSettings() -> IconSettings {
+        return createIconSettings()
+    }
+    
+    func updateIconSettings(_ settings: IconSettings) {
+        applyIconSettings(settings)
+    }
+}
+
+// MARK: - 错误处理
+extension IconGeneratorViewModel {
+    func clearError() {
+        errorMessage = nil
+    }
+    
+    var hasError: Bool {
+        errorMessage != nil
     }
 }
 
@@ -319,16 +502,5 @@ class SettingsService: ObservableObject {
             print("Failed to load settings: \(error)")
             return IconSettings()
         }
-    }
-}
-
-// MARK: - 错误处理
-extension IconGeneratorViewModel {
-    func clearError() {
-        errorMessage = nil
-    }
-    
-    var hasError: Bool {
-        errorMessage != nil
     }
 }

@@ -8,12 +8,8 @@ class LocationIconGenerator: BaseIconGenerator {
     override func generateIcon(size: CGSize, settings: IconSettings) async throws -> UIImage {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let image = self.renderLocationIcon(size: size, settings: settings)
-                    continuation.resume(returning: image)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+                let image = self.renderLocationIcon(size: size, settings: settings)
+                continuation.resume(returning: image)
             }
         }
     }

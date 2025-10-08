@@ -1,45 +1,28 @@
 import SwiftUI
 
-// MARK: - 设置面板视图
-struct SettingsPanelView: View {
-    @ObservedObject var iconContent: IconContentViewModel
-    @ObservedObject var previewConfig: PreviewConfigViewModel
-    @Binding var isVisible: Bool
+// MARK: - 新预览系统测试视图
+struct NewPreviewTestView: View {
+    @StateObject private var iconContent = IconContentViewModel()
+    @StateObject private var previewConfig = PreviewConfigViewModel()
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 顶部区域：标题和关闭按钮
-            HStack {
-                Text("🎨 图标设置")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button(action: {
-                    isVisible = false
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.title3)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            
-            // 设置选项区域
+        NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // 图标内容设置
+                    // 预览区域
+                    IconPreviewComponent(iconContent: iconContent, previewConfig: previewConfig)
+                        .padding()
+                    
+                    // 图标内容配置
                     iconContentSettings
                     
-                    // ViewA 设置
+                    // ViewA 配置
                     viewASettings
                     
-                    // ViewB 设置
+                    // ViewB 配置
                     viewBSettings
                     
-                    // ViewC 设置
+                    // ViewC 配置
                     viewCSettings
                     
                     // 重置按钮
@@ -52,14 +35,10 @@ struct SettingsPanelView: View {
                     .foregroundColor(.red)
                     .cornerRadius(8)
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
+                .padding()
             }
+            .navigationTitle("新预览系统测试")
         }
-        .padding(.top, 22)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
     }
     
     // MARK: - 图标内容设置
@@ -93,6 +72,9 @@ struct SettingsPanelView: View {
                 textIconSettings
             }
         }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
     }
     
     // MARK: - 文字图标设置
@@ -222,10 +204,5 @@ struct SettingsPanelView: View {
 }
 
 #Preview {
-    SettingsPanelView(
-        iconContent: IconContentViewModel(),
-        previewConfig: PreviewConfigViewModel(),
-        isVisible: .constant(true)
-    )
-    .frame(width: 300, height: 600)
+    NewPreviewTestView()
 }
