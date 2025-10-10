@@ -1483,7 +1483,11 @@ class IconGeneratorService: ObservableObject {
         size: CGSize,
         settings: IconSettings
     ) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false  // 支持透明度
+        format.scale = 1.0    // 使用设备像素比例
+        
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
         return renderer.image { context in
             let cgContext = context.cgContext
@@ -1492,7 +1496,7 @@ class IconGeneratorService: ObservableObject {
             let adjustedSettings = adjustSettingsForResolution(settings: settings, size: size)
             
             // 绘制外框背景
-            if adjustedSettings.backgroundAPadding > 0 {
+            if adjustedSettings.backgroundAPadding > 0 && adjustedSettings.backgroundAColor.color != .clear {
                 let outerRect = CGRect(
                     x: 0,
                     y: 0,
@@ -1551,7 +1555,13 @@ class IconGeneratorService: ObservableObject {
         rect: CGRect,
         settings: IconSettings
     ) {
-        context.setFillColor(settings.backgroundColor.color.cgColor!)
+        // 检查背景色是否为透明，如果是透明则不绘制背景
+        let backgroundColor = settings.backgroundColor.color
+        if backgroundColor == .clear {
+            return
+        }
+        
+        context.setFillColor(backgroundColor.cgColor!)
         
         switch settings.backgroundShape {
         case .circle:
