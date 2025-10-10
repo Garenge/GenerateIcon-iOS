@@ -11,7 +11,8 @@ struct AIGeneratorView: View {
     @State private var aiSettings = AISettings()
     @State private var showingTextSettings = false
     @State private var previewText = "MYAPP"
-    @State private var previewIcon: UIImage?
+    @State private var aiPreviewIcon: UIImage?
+    @State private var isGeneratingPreview = false
     
     @Environment(\.dismiss) private var dismiss
     
@@ -24,20 +25,16 @@ struct AIGeneratorView: View {
         globalViewModels.previewConfig
     }
     
+    // 判断是否应该显示AI内容
+    private var hasAIContent: Bool {
+        !prompt.isEmpty || aiPreviewIcon != nil || isGeneratingPreview
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // 上半部分：固定的图标预览区域
-                VStack(spacing: 16) {
-                    Text("当前图标预览")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    SimpleIconPreview()
-                        .frame(height: 200)
-                }
-                .padding()
-                .background(Color.gray.opacity(0.05))
+                // 顶部预览区域 - 从最上方开始，左右和父视图一样
+                previewSection
                 
                 Divider()
                 
@@ -67,40 +64,92 @@ struct AIGeneratorView: View {
                         dismiss()
                     }
                 }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Text("\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             .onTapGesture {
                 // 点击空白处收起键盘
                 hideKeyboard()
             }
             .onAppear {
-                updatePreview()
-            }
-            .onChange(of: previewText) { _ in
-                updatePreview()
-            }
-            .onChange(of: aiSettings.fontSize) { _ in
-                updatePreview()
-            }
-            .onChange(of: aiSettings.customFontSize) { _ in
-                updatePreview()
-            }
-            .onChange(of: aiSettings.fontFamily) { _ in
-                updatePreview()
-            }
-            .onChange(of: aiSettings.textColor) { _ in
-                updatePreview()
-            }
-            .onChange(of: aiSettings.textStyle) { _ in
-                updatePreview()
+                updatePreviewText()
             }
             .onChange(of: aiSettings.maxLength) { _ in
                 updatePreviewText()
-                updatePreview()
+                generateAIPreview()
+            }
+            .onChange(of: aiSettings.fontSize) { _ in
+                generateAIPreview()
+            }
+            .onChange(of: aiSettings.customFontSize) { _ in
+                generateAIPreview()
+            }
+            .onChange(of: aiSettings.fontFamily) { _ in
+                generateAIPreview()
+            }
+            .onChange(of: aiSettings.textColor) { _ in
+                generateAIPreview()
+            }
+            .onChange(of: aiSettings.textStyle) { _ in
+                generateAIPreview()
             }
             .onChange(of: aiSettings.textWrap) { _ in
-                updatePreview()
+                generateAIPreview()
             }
         }
+    }
+    
+    // MARK: - 预览区域
+    private var previewSection: some View {
+        ZStack {
+            // 根据是否有AI预览来决定显示内容
+            if hasAIContent {
+                // AI模式：显示AI生成的图标
+                if let aiPreviewIcon = aiPreviewIcon {
+                    Image(uiImage: aiPreviewIcon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 100, maxHeight: 100)
+                        .cornerRadius(8)
+                        .transition(.scale.combined(with: .opacity))
+                } else if isGeneratingPreview {
+                    // 生成中状态
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("AI生成中...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemBackground).opacity(0.8))
+                    .cornerRadius(8)
+                } else {
+                    // AI模式但无预览：显示AI占位符
+                    VStack {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 32))
+                            .foregroundColor(.blue)
+                        Text("AI图标预览")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else {
+                // 预设模式：显示原来的SimpleIconPreview
+                SimpleIconPreview()
+                    .frame(height: 120)
+            }
+        }
+        .frame(height: 120)
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .padding(.bottom, 16)
+        .background(Color(.systemBackground))
     }
     
     // MARK: - 提示词输入区域
@@ -114,6 +163,7 @@ struct AIGeneratorView: View {
                 .frame(height: 44)
                 .onChange(of: prompt) { _ in
                     updatePreviewText()
+                    generateAIPreview()
                 }
             
             Text("💡 提示：输入图标描述，系统会根据关键词智能生成图标。支持中英文，包含颜色、类型等关键词效果更好")
@@ -290,19 +340,6 @@ struct AIGeneratorView: View {
     }
     
     
-    // MARK: - 生成预览图标
-    private func generatePreviewIcon() async -> UIImage? {
-        // 使用与AI生成器完全相同的逻辑
-        let aiService = LocalAIService()
-        
-        do {
-            return try await aiService.generateIcon(prompt: prompt, settings: aiSettings)
-        } catch {
-            print("预览生成失败: \(error)")
-            return nil
-        }
-    }
-    
     // MARK: - 操作按钮
     private var actionButtons: some View {
         HStack(spacing: 16) {
@@ -331,17 +368,59 @@ struct AIGeneratorView: View {
         }
     }
     
-    private func updatePreview() {
-        Task {
-            let newIcon = await generatePreviewIcon()
-            await MainActor.run {
-                previewIcon = newIcon
-            }
-        }
-    }
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
+    // MARK: - AI预览生成
+    private func generateAIPreview() {
+        // 如果提示词为空，清除预览
+        guard !prompt.isEmpty else {
+            aiPreviewIcon = nil
+            isGeneratingPreview = false
+            return
+        }
+        
+        // 防抖：延迟生成，避免频繁调用
+        Task {
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒延迟
+            
+            // 检查是否被取消
+            guard !Task.isCancelled else { return }
+            
+            await MainActor.run {
+                isGeneratingPreview = true
+            }
+            
+            do {
+                // 1. 生成AI文字图标（透明背景）
+                let aiService = LocalAIService()
+                let aiIcon = try await aiService.generateIcon(prompt: prompt, settings: aiSettings)
+                
+                // 2. 临时设置AI图标到全局ViewModel，使其成为当前的自定义图标
+                await MainActor.run {
+                    globalViewModels.setCustomIcon(aiIcon)
+                }
+                
+                // 3. 使用和首页完全相同的预览生成逻辑
+                let iconGeneratorService = IconGeneratorService()
+                let previewIcon = try await iconGeneratorService.generatePreview(
+                    iconContent: iconContent,
+                    previewConfig: previewConfig
+                )
+                
+                await MainActor.run {
+                    aiPreviewIcon = previewIcon
+                    isGeneratingPreview = false
+                }
+            } catch {
+                await MainActor.run {
+                    isGeneratingPreview = false
+                }
+                print("AI预览生成失败: \(error)")
+            }
+        }
     }
     
     // MARK: - 示例提示词
@@ -380,4 +459,5 @@ struct AIGeneratorView: View {
         settings: .constant(IconSettings()),
         onGenerate: { _, _ in }
     )
+    .environmentObject(GlobalIconViewModels.shared)
 }

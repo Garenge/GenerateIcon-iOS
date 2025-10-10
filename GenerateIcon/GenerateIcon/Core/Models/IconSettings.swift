@@ -97,9 +97,9 @@ enum FontSize: String, CaseIterable, Identifiable, Codable {
     
     var size: CGFloat {
         switch self {
-        case .small: return 160
-        case .medium: return 260
-        case .large: return 350
+        case .small: return 80   // 适配256x256预览尺寸
+        case .medium: return 120 // 适配256x256预览尺寸
+        case .large: return 160  // 适配256x256预览尺寸
         case .custom: return 100 // 默认值，实际使用customFontSize
         }
     }

@@ -16,52 +16,34 @@ struct SimpleIconPreview: View {
     }
     
     var body: some View {
-        VStack(spacing: 12) {
-            // 预览标题
-            Text("图标预览")
-                .font(.headline)
-                .fontWeight(.semibold)
+        // 预览区域 - 居中显示
+        ZStack {
+            // 背景
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.gray.opacity(0.1))
+                .frame(width: 120, height: 120)
             
-            // 预览区域
-            ZStack {
-                // 背景
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                
-                if isLoading {
-                    // 加载状态
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else if let previewImage = previewImage {
-                    // 预览图片
-                    Image(uiImage: previewImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 100, height: 100)
-                        .cornerRadius(6)
-                } else {
-                    // 默认状态
-                    VStack {
-                        Image(systemName: "photo")
-                            .font(.system(size: 24))
-                            .foregroundColor(.gray)
-                        Text("暂无预览")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+            if isLoading {
+                // 加载状态
+                ProgressView()
+                    .scaleEffect(0.8)
+            } else if let previewImage = previewImage {
+                // 预览图片
+                Image(uiImage: previewImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(6)
+            } else {
+                // 默认状态
+                VStack {
+                    Image(systemName: "photo")
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                    Text("暂无预览")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-            }
-            
-            // 预览信息
-            VStack(spacing: 2) {
-                Text("\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text(iconContent.contentType.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .onAppear {
