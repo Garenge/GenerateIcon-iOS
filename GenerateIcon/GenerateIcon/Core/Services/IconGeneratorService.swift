@@ -196,6 +196,11 @@ class IconGeneratorService: ObservableObject {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 如果ViewA背景透明，清除整个画布
+            if previewConfig.viewABackgroundColor == .clear {
+                cgContext.clear(CGRect(origin: .zero, size: previewConfig.previewSize))
+            }
+            
             // 根据分辨率调整设置
             let scale = min(previewConfig.previewSize.width, previewConfig.previewSize.height) / 256.0
             
@@ -223,28 +228,32 @@ class IconGeneratorService: ObservableObject {
         
         // 绘制ViewA背景
         if previewConfig.viewABackgroundColor != .clear {
-            context.setFillColor(previewConfig.viewABackgroundColor.cgColor!)
-            
-            if cornerRadius > 0 {
-                let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
-                context.addPath(path.cgPath)
-                context.fillPath()
-            } else {
-                context.fill(outerRect)
+            if let backgroundColor = previewConfig.viewABackgroundColor.cgColor {
+                context.setFillColor(backgroundColor)
+                
+                if cornerRadius > 0 {
+                    let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
+                    context.addPath(path.cgPath)
+                    context.fillPath()
+                } else {
+                    context.fill(outerRect)
+                }
             }
         }
         
         // 绘制ViewA边框
         if previewConfig.viewABorderWidth > 0 && previewConfig.viewABorderColor != .clear {
-            context.setStrokeColor(previewConfig.viewABorderColor.cgColor!)
-            context.setLineWidth(previewConfig.viewABorderWidth * scale)
-            
-            if cornerRadius > 0 {
-                let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
-                context.addPath(path.cgPath)
-                context.strokePath()
-            } else {
-                context.stroke(outerRect)
+            if let borderColor = previewConfig.viewABorderColor.cgColor {
+                context.setStrokeColor(borderColor)
+                context.setLineWidth(previewConfig.viewABorderWidth * scale)
+                
+                if cornerRadius > 0 {
+                    let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
+                    context.addPath(path.cgPath)
+                    context.strokePath()
+                } else {
+                    context.stroke(outerRect)
+                }
             }
         }
     }
@@ -261,15 +270,17 @@ class IconGeneratorService: ObservableObject {
         
         // 绘制ViewB背景
         if previewConfig.viewBBackgroundColor != .clear {
-            context.setFillColor(previewConfig.viewBBackgroundColor.cgColor!)
-            
-            let cornerRadius = previewConfig.viewBCornerRadius * scale
-            if cornerRadius > 0 {
-                let path = UIBezierPath(roundedRect: viewBArea, cornerRadius: cornerRadius)
-                context.addPath(path.cgPath)
-                context.fillPath()
-            } else {
-                context.fill(viewBArea)
+            if let backgroundColor = previewConfig.viewBBackgroundColor.cgColor {
+                context.setFillColor(backgroundColor)
+                
+                let cornerRadius = previewConfig.viewBCornerRadius * scale
+                if cornerRadius > 0 {
+                    let path = UIBezierPath(roundedRect: viewBArea, cornerRadius: cornerRadius)
+                    context.addPath(path.cgPath)
+                    context.fillPath()
+                } else {
+                    context.fill(viewBArea)
+                }
             }
         }
         
@@ -284,16 +295,18 @@ class IconGeneratorService: ObservableObject {
         
         // 绘制ViewB边框
         if previewConfig.viewBBorderWidth > 0 && previewConfig.viewBBorderColor != .clear {
-            context.setStrokeColor(previewConfig.viewBBorderColor.cgColor!)
-            context.setLineWidth(previewConfig.viewBBorderWidth * scale)
-            
-            let cornerRadius = previewConfig.viewBCornerRadius * scale
-            if cornerRadius > 0 {
-                let path = UIBezierPath(roundedRect: viewBArea, cornerRadius: cornerRadius)
-                context.addPath(path.cgPath)
-                context.strokePath()
-            } else {
-                context.stroke(viewBArea)
+            if let borderColor = previewConfig.viewBBorderColor.cgColor {
+                context.setStrokeColor(borderColor)
+                context.setLineWidth(previewConfig.viewBBorderWidth * scale)
+                
+                let cornerRadius = previewConfig.viewBCornerRadius * scale
+                if cornerRadius > 0 {
+                    let path = UIBezierPath(roundedRect: viewBArea, cornerRadius: cornerRadius)
+                    context.addPath(path.cgPath)
+                    context.strokePath()
+                } else {
+                    context.stroke(viewBArea)
+                }
             }
         }
         
@@ -416,7 +429,7 @@ class IconGeneratorService: ObservableObject {
             // 设置文字属性
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: finalFont,
-                .foregroundColor: config.textColor.cgColor!
+                .foregroundColor: config.textColor.cgColor ?? UIColor.black.cgColor
             ]
             
             // 计算文字位置
@@ -1567,8 +1580,10 @@ class IconGeneratorService: ObservableObject {
                     height: size.height
                 )
                 
-                cgContext.setFillColor(adjustedSettings.backgroundAColor.color.cgColor!)
-                cgContext.fill(outerRect)
+                if let backgroundColor = adjustedSettings.backgroundAColor.color.cgColor {
+                    cgContext.setFillColor(backgroundColor)
+                    cgContext.fill(outerRect)
+                }
             }
             
             // 计算图标区域
@@ -1624,39 +1639,43 @@ class IconGeneratorService: ObservableObject {
             return
         }
         
-        context.setFillColor(backgroundColor.cgColor!)
-        
-        switch settings.backgroundShape {
-        case .circle:
-            context.fillEllipse(in: rect)
-        case .rounded:
-            let path = UIBezierPath(
-                roundedRect: rect,
-                cornerRadius: settings.cornerRadius
-            )
-            context.addPath(path.cgPath)
-            context.fillPath()
-        case .square:
-            context.fill(rect)
-        }
-        
-        // 绘制边框
-        if settings.borderWidth > 0 {
-            context.setStrokeColor(settings.borderColor.color.cgColor!)
-            context.setLineWidth(settings.borderWidth)
+        if let bgColor = backgroundColor.cgColor {
+            context.setFillColor(bgColor)
             
             switch settings.backgroundShape {
             case .circle:
-                context.strokeEllipse(in: rect)
+                context.fillEllipse(in: rect)
             case .rounded:
                 let path = UIBezierPath(
                     roundedRect: rect,
                     cornerRadius: settings.cornerRadius
                 )
                 context.addPath(path.cgPath)
-                context.strokePath()
+                context.fillPath()
             case .square:
-                context.stroke(rect)
+                context.fill(rect)
+            }
+        }
+        
+        // 绘制边框
+        if settings.borderWidth > 0 {
+            if let borderColor = settings.borderColor.color.cgColor {
+                context.setStrokeColor(borderColor)
+                context.setLineWidth(settings.borderWidth)
+                
+                switch settings.backgroundShape {
+                case .circle:
+                    context.strokeEllipse(in: rect)
+                case .rounded:
+                    let path = UIBezierPath(
+                        roundedRect: rect,
+                        cornerRadius: settings.cornerRadius
+                    )
+                    context.addPath(path.cgPath)
+                    context.strokePath()
+                case .square:
+                    context.stroke(rect)
+                }
             }
         }
     }
