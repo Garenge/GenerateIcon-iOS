@@ -11,8 +11,11 @@ struct SettingsPanelView: View {
             // 顶部预览区域 - 和AI生成页面一致
             ZStack {
                 // 预览图
-                SimpleIconPreview()
-                    .frame(height: 120)
+                SimpleIconPreview(
+                    iconContent: iconContent,
+                    previewConfig: previewConfig
+                )
+                .frame(height: 120)
                 
                 // 标题和关闭按钮 - 覆盖在预览图顶部
                 VStack {
@@ -169,7 +172,7 @@ struct SettingsPanelView: View {
                 
                 HStack {
                     Text("图标透明度: \(String(format: "%.1f", previewConfig.iconOpacity))")
-                    Slider(value: $previewConfig.iconOpacity, in: 0.1...1.0)
+                    Slider(value: $previewConfig.iconOpacity, in: 0.0...1.0)
                 }
             }
             .padding(.leading)

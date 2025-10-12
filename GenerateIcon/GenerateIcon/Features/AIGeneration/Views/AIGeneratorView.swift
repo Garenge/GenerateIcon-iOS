@@ -141,8 +141,11 @@ struct AIGeneratorView: View {
                 }
             } else {
                 // 预设模式：显示原来的SimpleIconPreview
-                SimpleIconPreview()
-                    .frame(height: 120)
+                SimpleIconPreview(
+                    iconContent: globalViewModels.iconContent,
+                    previewConfig: globalViewModels.previewConfig
+                )
+                .frame(height: 120)
             }
         }
         .frame(height: 120)

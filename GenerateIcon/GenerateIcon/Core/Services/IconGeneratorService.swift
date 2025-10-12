@@ -219,17 +219,33 @@ class IconGeneratorService: ObservableObject {
             height: previewConfig.previewSize.height
         )
         
+        let cornerRadius = previewConfig.viewACornerRadius * scale
+        
         // 绘制ViewA背景
         if previewConfig.viewABackgroundColor != .clear {
             context.setFillColor(previewConfig.viewABackgroundColor.cgColor!)
-            context.fill(outerRect)
+            
+            if cornerRadius > 0 {
+                let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
+                context.addPath(path.cgPath)
+                context.fillPath()
+            } else {
+                context.fill(outerRect)
+            }
         }
         
         // 绘制ViewA边框
         if previewConfig.viewABorderWidth > 0 && previewConfig.viewABorderColor != .clear {
             context.setStrokeColor(previewConfig.viewABorderColor.cgColor!)
             context.setLineWidth(previewConfig.viewABorderWidth * scale)
-            context.stroke(outerRect)
+            
+            if cornerRadius > 0 {
+                let path = UIBezierPath(roundedRect: outerRect, cornerRadius: cornerRadius)
+                context.addPath(path.cgPath)
+                context.strokePath()
+            } else {
+                context.stroke(outerRect)
+            }
         }
     }
     
@@ -326,8 +342,28 @@ class IconGeneratorService: ObservableObject {
             opacity: previewConfig.iconOpacity
         )
         
-        // 绘制图标
-        iconImage.draw(in: iconRect)
+        // 应用变换绘制图标
+        context.saveGState()
+        
+        // 移动到图标中心
+        context.translateBy(x: iconRect.midX, y: iconRect.midY)
+        
+        // 应用旋转
+        context.rotate(by: previewConfig.iconRotation * .pi / 180)
+        
+        // 应用透明度
+        context.setAlpha(previewConfig.iconOpacity)
+        
+        // 绘制图标（以中心为原点）
+        let drawRect = CGRect(
+            x: -iconRect.width / 2,
+            y: -iconRect.height / 2,
+            width: iconRect.width,
+            height: iconRect.height
+        )
+        iconImage.draw(in: drawRect)
+        
+        context.restoreGState()
     }
     
     // MARK: - 生成文字图标

@@ -5,14 +5,14 @@ import Combine
 // MARK: - 预览配置ViewModel - 临时兼容性类
 class PreviewConfigViewModel: ObservableObject {
     // MARK: - ViewA 最底图配置
-    @Published var viewABackgroundColor: Color = .clear
-    @Published var viewABorderColor: Color = .clear
-    @Published var viewACornerRadius: CGFloat = 0
+    @Published var viewABackgroundColor: Color = .white
+    @Published var viewABorderColor: Color = .black
+    @Published var viewACornerRadius: CGFloat = 10
     @Published var viewAPadding: CGFloat = 20
-    @Published var viewABorderWidth: CGFloat = 0
+    @Published var viewABorderWidth: CGFloat = 2
     
     // MARK: - ViewB 容器图配置
-    @Published var viewBBackgroundColor: Color = Color(red: 0.4, green: 0.49, blue: 0.92)
+    @Published var viewBBackgroundColor: Color = .clear
     @Published var viewBBorderColor: Color = .clear
     @Published var viewBCornerRadius: CGFloat = 40
     @Published var viewBPadding: CGFloat = 20
@@ -30,14 +30,14 @@ class PreviewConfigViewModel: ObservableObject {
     // MARK: - 方法
     func resetToDefaults() {
         // ViewA 默认设置
-        viewABackgroundColor = .clear
-        viewABorderColor = .clear
-        viewACornerRadius = 0
+        viewABackgroundColor = .white
+        viewABorderColor = .black
+        viewACornerRadius = 10
         viewAPadding = 20
-        viewABorderWidth = 0
+        viewABorderWidth = 2
         
         // ViewB 默认设置
-        viewBBackgroundColor = Color(red: 0.4, green: 0.49, blue: 0.92)
+        viewBBackgroundColor = .clear
         viewBBorderColor = .clear
         viewBCornerRadius = 40
         viewBPadding = 20
