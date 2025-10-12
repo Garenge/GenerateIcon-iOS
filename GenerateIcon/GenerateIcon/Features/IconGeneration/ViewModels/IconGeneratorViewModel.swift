@@ -383,11 +383,34 @@ class IconGeneratorViewModel: ObservableObject {
             globalViewModels.saveSettings()
             print("🔄 IconGeneratorViewModel: 强制保存设置完成")
             
-            // 直接使用GlobalIconViewModels中的对象，确保数据一致性
-            let highResPreviewConfig = currentPreviewConfig
+            // 创建高分辨率配置的副本，不影响预览图
+            let highResPreviewConfig = PreviewConfigViewModel()
             highResPreviewConfig.previewSize = highResSize
             
-            let highResIconContent = currentIconContent
+            // 复制所有设置，但不影响原始预览配置
+            highResPreviewConfig.viewABackgroundColor = currentPreviewConfig.viewABackgroundColor
+            highResPreviewConfig.viewABorderColor = currentPreviewConfig.viewABorderColor
+            highResPreviewConfig.viewACornerRadius = currentPreviewConfig.viewACornerRadius
+            highResPreviewConfig.viewAPadding = currentPreviewConfig.viewAPadding
+            highResPreviewConfig.viewABorderWidth = currentPreviewConfig.viewABorderWidth
+            
+            highResPreviewConfig.viewBBackgroundColor = currentPreviewConfig.viewBBackgroundColor
+            highResPreviewConfig.viewBBorderColor = currentPreviewConfig.viewBBorderColor
+            highResPreviewConfig.viewBCornerRadius = currentPreviewConfig.viewBCornerRadius
+            highResPreviewConfig.viewBPadding = currentPreviewConfig.viewBPadding
+            highResPreviewConfig.viewBBorderWidth = currentPreviewConfig.viewBBorderWidth
+            highResPreviewConfig.viewBShadowIntensity = currentPreviewConfig.viewBShadowIntensity
+            
+            highResPreviewConfig.iconScale = currentPreviewConfig.iconScale
+            highResPreviewConfig.iconRotation = currentPreviewConfig.iconRotation
+            highResPreviewConfig.iconOpacity = currentPreviewConfig.iconOpacity
+            
+            // 创建高分辨率图标内容的副本
+            let highResIconContent = IconContentViewModel()
+            highResIconContent.contentType = currentIconContent.contentType
+            highResIconContent.selectedPresetType = currentIconContent.selectedPresetType
+            highResIconContent.customImage = currentIconContent.customImage
+            highResIconContent.textConfig = currentIconContent.textConfig
             
             // 如果是AI模式，使用AI生成的图标
             if isInAIMode, let aiIcon = lastGeneratedIcon {
