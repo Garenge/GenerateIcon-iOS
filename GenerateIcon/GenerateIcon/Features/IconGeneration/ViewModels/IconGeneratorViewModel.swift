@@ -8,6 +8,7 @@ class IconGeneratorViewModel: ObservableObject {
     @Published var isGenerating = false
     @Published var generationProgress: Double = 0.0
     @Published var showingSaveConfirmation = false
+    @Published var showingOpenPhotoLibraryAlert = false
     @Published var pendingImage: UIImage?
     @Published var lastGeneratedIcon: UIImage?
     @Published var errorMessage: String?
@@ -345,6 +346,7 @@ class IconGeneratorViewModel: ObservableObject {
             await MainActor.run {
                 self.showingSaveConfirmation = false
                 self.pendingImage = nil
+                self.showingOpenPhotoLibraryAlert = true
             }
             // 显示成功Toast
             HUDToastManager.shared.showSuccessToast(message: "图标已保存到相册！")
@@ -360,6 +362,12 @@ class IconGeneratorViewModel: ObservableObject {
     func cancelSave() {
         showingSaveConfirmation = false
         pendingImage = nil
+    }
+    
+    func openPhotoLibrary() {
+        if let url = URL(string: "photos-redirect://") {
+            UIApplication.shared.open(url)
+        }
     }
     
     private func generateIOSIconSet(type: IconType) async throws {

@@ -114,9 +114,9 @@ struct IconGeneratorView: View {
                             .frame(width: 256, height: 256)
                             .id("preview-\(iconGenerator.selectedPresetType.rawValue)-\(iconGenerator.contentType == .text ? "text" : "preset")-\(iconGenerator.isInAIMode ? "ai" : "preset")")
                         
-                        // 生成按钮
+                        // 下载按钮
                         Button(action: {
-                            showingSaveConfirmation = true
+                            showingSizeSelection = true
                         }) {
                             HStack {
                                 if isSaving {
@@ -124,9 +124,9 @@ struct IconGeneratorView: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 } else {
-                                    Image(systemName: "paintbrush.fill")
+                                    Image(systemName: "square.and.arrow.down")
                                 }
-                                Text(isSaving ? "生成中..." : "生成并下载图标")
+                                Text(isSaving ? "生成中..." : "下载图标")
                             }
                             .font(.headline)
                             .foregroundColor(.white)
@@ -278,6 +278,17 @@ struct IconGeneratorView: View {
             }
         } message: {
             Text("是否将生成的图标保存到相册？")
+        }
+        .alert("保存成功", isPresented: $globalViewModels.iconGenerator.showingOpenPhotoLibraryAlert) {
+            Button("取消", role: .cancel) {
+                globalViewModels.iconGenerator.showingOpenPhotoLibraryAlert = false
+            }
+            Button("打开相册") {
+                globalViewModels.iconGenerator.openPhotoLibrary()
+                globalViewModels.iconGenerator.showingOpenPhotoLibraryAlert = false
+            }
+        } message: {
+            Text("图标已成功保存到相册！是否打开相册查看？")
         }
         .hudToast() // 添加HUD和Toast支持
     }

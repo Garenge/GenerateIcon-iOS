@@ -40,7 +40,7 @@ struct SizeSelectionView: View {
                     }
                     .buttonStyle(.bordered)
                     
-                    Button("确认并下载") {
+                    Button(selectedDownloadType == .ios ? "生成并分享" : "生成并保存") {
                         let size = selectedDownloadType == .custom ? 
                             CGSize(width: selectedSize, height: selectedSize) : 
                             CGSize.zero
