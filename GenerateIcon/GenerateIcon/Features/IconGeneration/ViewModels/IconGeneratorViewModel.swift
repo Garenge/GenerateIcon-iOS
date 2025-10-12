@@ -341,34 +341,42 @@ class IconGeneratorViewModel: ObservableObject {
             let highResSize = CGSize(width: 1024, height: 1024)
             print("🔄 IconGeneratorViewModel: 目标尺寸: \(highResSize)")
             
+            // 获取GlobalIconViewModels中的最新设置
+            let globalViewModels = GlobalIconViewModels.shared
+            let currentPreviewConfig = globalViewModels.previewConfig
+            let currentIconContent = globalViewModels.iconContent
+            
+            print("🔄 IconGeneratorViewModel: 使用最新设置 - contentType: \(currentIconContent.contentType), presetType: \(currentIconContent.selectedPresetType)")
+            print("🔄 IconGeneratorViewModel: 最新背景颜色 - viewA: \(currentPreviewConfig.viewABackgroundColor), viewB: \(currentPreviewConfig.viewBBackgroundColor)")
+            
             // 创建高分辨率的预览配置
             let highResPreviewConfig = PreviewConfigViewModel()
             highResPreviewConfig.previewSize = highResSize
             
-            // 复制当前的预览设置
-            highResPreviewConfig.viewABackgroundColor = viewABackgroundColor
-            highResPreviewConfig.viewABorderColor = viewABorderColor
-            highResPreviewConfig.viewACornerRadius = viewACornerRadius
-            highResPreviewConfig.viewAPadding = viewAPadding
-            highResPreviewConfig.viewABorderWidth = viewABorderWidth
+            // 使用GlobalIconViewModels中的最新设置
+            highResPreviewConfig.viewABackgroundColor = currentPreviewConfig.viewABackgroundColor
+            highResPreviewConfig.viewABorderColor = currentPreviewConfig.viewABorderColor
+            highResPreviewConfig.viewACornerRadius = currentPreviewConfig.viewACornerRadius
+            highResPreviewConfig.viewAPadding = currentPreviewConfig.viewAPadding
+            highResPreviewConfig.viewABorderWidth = currentPreviewConfig.viewABorderWidth
             
-            highResPreviewConfig.viewBBackgroundColor = viewBBackgroundColor
-            highResPreviewConfig.viewBBorderColor = viewBBorderColor
-            highResPreviewConfig.viewBCornerRadius = viewBCornerRadius
-            highResPreviewConfig.viewBPadding = viewBPadding
-            highResPreviewConfig.viewBBorderWidth = viewBBorderWidth
-            highResPreviewConfig.viewBShadowIntensity = viewBShadowIntensity
+            highResPreviewConfig.viewBBackgroundColor = currentPreviewConfig.viewBBackgroundColor
+            highResPreviewConfig.viewBBorderColor = currentPreviewConfig.viewBBorderColor
+            highResPreviewConfig.viewBCornerRadius = currentPreviewConfig.viewBCornerRadius
+            highResPreviewConfig.viewBPadding = currentPreviewConfig.viewBPadding
+            highResPreviewConfig.viewBBorderWidth = currentPreviewConfig.viewBBorderWidth
+            highResPreviewConfig.viewBShadowIntensity = currentPreviewConfig.viewBShadowIntensity
             
-            highResPreviewConfig.iconScale = iconScale
-            highResPreviewConfig.iconRotation = iconRotation
-            highResPreviewConfig.iconOpacity = iconOpacity
+            highResPreviewConfig.iconScale = currentPreviewConfig.iconScale
+            highResPreviewConfig.iconRotation = currentPreviewConfig.iconRotation
+            highResPreviewConfig.iconOpacity = currentPreviewConfig.iconOpacity
             
             // 创建高分辨率的图标内容
             let highResIconContent = IconContentViewModel()
-            highResIconContent.contentType = contentType
-            highResIconContent.selectedPresetType = selectedPresetType
-            highResIconContent.customImage = customImage
-            highResIconContent.textConfig = textConfig
+            highResIconContent.contentType = currentIconContent.contentType
+            highResIconContent.selectedPresetType = currentIconContent.selectedPresetType
+            highResIconContent.customImage = currentIconContent.customImage
+            highResIconContent.textConfig = currentIconContent.textConfig
             
             // 如果是AI模式，使用AI生成的图标
             if isInAIMode, let aiIcon = lastGeneratedIcon {
