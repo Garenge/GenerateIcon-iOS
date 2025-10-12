@@ -20,7 +20,14 @@ extension UIImage {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
+            // 绘制图片
             self.draw(in: CGRect(origin: .zero, size: size))
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
 }
@@ -200,6 +207,12 @@ class IconGeneratorService: ObservableObject {
     ) -> UIImage {
         print("🔄 IconGeneratorService: renderIconWithThreeLayers STARTED!")
         
+        // 检查尺寸是否有效
+        guard previewConfig.previewSize.width > 0 && previewConfig.previewSize.height > 0 else {
+            print("❌ IconGeneratorService: Invalid preview size: \(previewConfig.previewSize)")
+            return UIImage()
+        }
+        
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
         format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
@@ -218,6 +231,9 @@ class IconGeneratorService: ObservableObject {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 如果ViewA背景透明，清除整个画布
             if previewConfig.viewABackgroundColor == .clear {
                 cgContext.clear(CGRect(origin: .zero, size: previewConfig.previewSize))
@@ -234,6 +250,9 @@ class IconGeneratorService: ObservableObject {
             
             // MARK: - ViewC: 图标层
             drawViewC(in: cgContext, iconContent: iconContent, previewConfig: previewConfig, scale: scale, viewBArea: viewBArea)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
@@ -421,6 +440,9 @@ class IconGeneratorService: ObservableObject {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 计算字体大小，考虑设备像素比例以提高清晰度
             let baseSize: CGFloat = 256.0
             let scaleFactor = min(size.width, size.height) / baseSize
@@ -472,6 +494,9 @@ class IconGeneratorService: ObservableObject {
             
             // 绘制文字
             text.draw(in: textRect, withAttributes: attributes)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
@@ -516,7 +541,7 @@ class IconGeneratorService: ObservableObject {
         print("🔄 IconGeneratorService: Generating simple icon for type=\(type.displayName), size=\(size)")
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -528,8 +553,14 @@ class IconGeneratorService: ObservableObject {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 根据图标类型绘制不同的图标
             drawPresetIconContent(in: cgContext, type: type, size: size)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
@@ -1596,6 +1627,14 @@ class IconGeneratorService: ObservableObject {
         return renderer.image { context in
             let cgContext = context.cgContext
             
+            // 设置高质量渲染
+            cgContext.setShouldAntialias(true)
+            cgContext.setAllowsAntialiasing(true)
+            cgContext.interpolationQuality = .high
+            
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 根据分辨率调整设置
             let adjustedSettings = adjustSettingsForResolution(settings: settings, size: size)
             
@@ -1641,6 +1680,9 @@ class IconGeneratorService: ObservableObject {
             )
             
             icon.draw(in: iconRect)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
