@@ -25,6 +25,9 @@ class GlobalIconViewModels: ObservableObject {
         print("🔄 GlobalIconViewModels: Initializing with previewConfig objectId=\(ObjectIdentifier(previewConfig))")
         print("🔄 GlobalIconViewModels: Initial iconGenerator contentType=\(iconGenerator.contentType), presetType=\(iconGenerator.selectedPresetType.displayName)")
         
+        // 加载保存的设置
+        loadSettings()
+        
         // 先同步一次初始数据
         syncInitialData()
         
@@ -39,7 +42,16 @@ class GlobalIconViewModels: ObservableObject {
         iconContent.contentType = iconGenerator.contentType
         iconContent.selectedPresetType = iconGenerator.selectedPresetType
         iconContent.customImage = iconGenerator.customImage
-        iconContent.textConfig = iconGenerator.textConfig
+        // 手动同步textConfig的属性
+        iconContent.textConfig.isEnabled = iconGenerator.textConfig.isEnabled
+        iconContent.textConfig.text = iconGenerator.textConfig.text
+        iconContent.textConfig.fontSize = iconGenerator.textConfig.fontSize
+        iconContent.textConfig.fontFamily = iconGenerator.textConfig.fontFamily
+        iconContent.textConfig.textStyle = iconGenerator.textConfig.textStyle
+        iconContent.textConfig.textColor = iconGenerator.textConfig.textColor
+        iconContent.textConfig.customFontSize = iconGenerator.textConfig.customFontSize
+        iconContent.textConfig.maxLength = iconGenerator.textConfig.maxLength
+        iconContent.textConfig.textWrap = iconGenerator.textConfig.textWrap
         
         // 同步previewConfig
         previewConfig.viewABackgroundColor = iconGenerator.viewABackgroundColor
@@ -77,8 +89,21 @@ class GlobalIconViewModels: ObservableObject {
             .assign(to: \.customImage, on: iconContent)
             .store(in: &cancellables)
         
+        // textConfig 不能直接绑定，因为它是@Published属性
+        // 我们通过监听textConfig的变化来同步
         iconGenerator.$textConfig
-            .assign(to: \.textConfig, on: iconContent)
+            .sink { [weak self] newTextConfig in
+                // 手动同步textConfig的属性
+                self?.iconContent.textConfig.isEnabled = newTextConfig.isEnabled
+                self?.iconContent.textConfig.text = newTextConfig.text
+                self?.iconContent.textConfig.fontSize = newTextConfig.fontSize
+                self?.iconContent.textConfig.fontFamily = newTextConfig.fontFamily
+                self?.iconContent.textConfig.textStyle = newTextConfig.textStyle
+                self?.iconContent.textConfig.textColor = newTextConfig.textColor
+                self?.iconContent.textConfig.customFontSize = newTextConfig.customFontSize
+                self?.iconContent.textConfig.maxLength = newTextConfig.maxLength
+                self?.iconContent.textConfig.textWrap = newTextConfig.textWrap
+            }
             .store(in: &cancellables)
         
         // 监听iconGenerator的变化，同步到previewConfig
@@ -142,6 +167,70 @@ class GlobalIconViewModels: ObservableObject {
             .assign(to: \.previewSize, on: previewConfig)
             .store(in: &cancellables)
         
+        // 监听设置变化，自动保存
+        iconContent.$contentType
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        iconContent.$selectedPresetType
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$viewABackgroundColor
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$viewBBackgroundColor
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$viewBCornerRadius
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$viewBPadding
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$iconScale
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$iconRotation
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        previewConfig.$iconOpacity
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
         print("🔄 GlobalIconViewModels: Bindings setup completed")
     }
     
@@ -161,6 +250,43 @@ class GlobalIconViewModels: ObservableObject {
     
     func setTextIcon(_ config: TextIconConfigViewModel) {
         iconGenerator.setTextIcon(config)
+    }
+    
+    // MARK: - 设置管理
+    private func loadSettings() {
+        let settingsService = SettingsService()
+        
+        // 加载预览配置
+        let savedPreviewConfig = settingsService.loadPreviewConfig()
+        previewConfig = savedPreviewConfig
+        
+        // 加载图标内容配置
+        let savedIconContent = settingsService.loadIconContent()
+        iconContent = savedIconContent
+        
+        print("🔄 GlobalIconViewModels: Settings loaded - contentType=\(iconContent.contentType), presetType=\(iconContent.selectedPresetType.displayName)")
+    }
+    
+    func saveSettings() {
+        let settingsService = SettingsService()
+        
+        // 保存预览配置
+        settingsService.savePreviewConfig(previewConfig)
+        
+        // 保存图标内容配置
+        settingsService.saveIconContent(iconContent)
+        
+        print("🔄 GlobalIconViewModels: Settings saved")
+    }
+    
+    func clearAllSettings() {
+        let settingsService = SettingsService()
+        settingsService.clearAllSettings()
+        
+        // 重置到默认值
+        resetToDefaults()
+        
+        print("🔄 GlobalIconViewModels: All settings cleared")
     }
 }
 

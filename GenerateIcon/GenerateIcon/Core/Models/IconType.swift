@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - 图标类型枚举
-enum IconType: String, CaseIterable, Identifiable {
+enum IconType: String, CaseIterable, Identifiable, Codable {
     // 基础图标
     case calculator = "calculator"
     case mouse = "mouse"

@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - 图标内容ViewModel - 临时兼容性类
-class IconContentViewModel: ObservableObject {
+class IconContentViewModel: ObservableObject, Codable {
     // MARK: - 图标内容类型
     @Published var contentType: IconContentType = .preset
     @Published var selectedPresetType: IconType = .calculator
@@ -32,6 +32,37 @@ class IconContentViewModel: ObservableObject {
     
     var isUsingTextIcon: Bool {
         contentType == .text && textConfig.isEnabled
+    }
+    
+    // MARK: - Codable实现
+    enum CodingKeys: String, CodingKey {
+        case contentType, selectedPresetType, textConfig
+        // 注意：customImage不保存，因为UIImage不能直接编码
+    }
+    
+    init() {
+        // 默认初始化
+    }
+    
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        contentType = try container.decodeIfPresent(IconContentType.self, forKey: .contentType) ?? .preset
+        selectedPresetType = try container.decodeIfPresent(IconType.self, forKey: .selectedPresetType) ?? .calculator
+        textConfig = try container.decodeIfPresent(TextIconConfigViewModel.self, forKey: .textConfig) ?? TextIconConfigViewModel()
+        
+        // customImage不保存，默认为nil
+        customImage = nil
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(contentType, forKey: .contentType)
+        try container.encode(selectedPresetType, forKey: .selectedPresetType)
+        try container.encode(textConfig, forKey: .textConfig)
+        
+        // customImage不保存，因为UIImage不能直接编码
     }
     
     // MARK: - 方法

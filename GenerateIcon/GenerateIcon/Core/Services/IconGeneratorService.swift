@@ -3,6 +3,28 @@ import SwiftUI
 import UIKit
 import Combine
 
+// MARK: - UIImage扩展
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false
+        format.scale = UIScreen.main.scale
+        
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            
+            // 设置高质量渲染
+            cgContext.setShouldAntialias(true)
+            cgContext.setAllowsAntialiasing(true)
+            cgContext.interpolationQuality = .high
+            
+            self.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
 // MARK: - 图标生成服务
 class IconGeneratorService: ObservableObject {
     @Published var isGenerating = false
@@ -180,7 +202,7 @@ class IconGeneratorService: ObservableObject {
         
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
         
         print("🔄 IconGeneratorService: renderIconWithThreeLayers - format.opaque=\(format.opaque)")
         print("🔄 IconGeneratorService: ViewA background=\(previewConfig.viewABackgroundColor)")
@@ -331,14 +353,20 @@ class IconGeneratorService: ObservableObject {
             height: viewBArea.height - padding * 2
         )
         
-        // 生成图标内容
+        // 生成图标内容 - 使用原始尺寸而不是缩放后的尺寸
         let iconImage: UIImage
         switch iconContent.contentType {
         case .preset:
             iconImage = generatePresetIcon(type: iconContent.selectedPresetType, size: iconArea.size)
         case .custom:
             if let customIcon = iconContent.customImage {
-                iconImage = customIcon
+                // 对于自定义图标，需要根据目标尺寸重新生成或缩放
+                let targetSize = iconArea.size
+                if customIcon.size != targetSize {
+                    iconImage = customIcon.resized(to: targetSize)
+                } else {
+                    iconImage = customIcon
+                }
             } else {
                 iconImage = generatePresetIcon(type: .calculator, size: iconArea.size)
             }
@@ -346,13 +374,11 @@ class IconGeneratorService: ObservableObject {
             iconImage = generateTextIcon(config: iconContent.textConfig, size: iconArea.size)
         }
         
-        // 计算图标在ViewC中的位置
-        let iconRect = calculateIconRect(
+        // 计算图标在ViewC中的位置 - 确保图标填满可用区域
+        let iconRect = calculateIconRectForViewC(
             in: iconArea,
             iconSize: iconImage.size,
-            scale: previewConfig.iconScale,
-            rotation: previewConfig.iconRotation,
-            opacity: previewConfig.iconOpacity
+            scale: previewConfig.iconScale
         )
         
         // 应用变换绘制图标
@@ -383,7 +409,7 @@ class IconGeneratorService: ObservableObject {
     private func generateTextIcon(config: TextIconConfigViewModel, size: CGSize) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -395,8 +421,10 @@ class IconGeneratorService: ObservableObject {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
-            // 计算字体大小
-            let fontSize = config.effectiveFontSize * (min(size.width, size.height) / 256.0)
+            // 计算字体大小，考虑设备像素比例以提高清晰度
+            let baseSize: CGFloat = 256.0
+            let scaleFactor = min(size.width, size.height) / baseSize
+            let fontSize = config.effectiveFontSize * scaleFactor * UIScreen.main.scale
             
             // 创建字体，应用文字样式
             var fontDescriptor: UIFontDescriptor
@@ -1561,7 +1589,7 @@ class IconGeneratorService: ObservableObject {
     ) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -1712,6 +1740,27 @@ class IconGeneratorService: ObservableObject {
             height: iconSize.height * scale
         )
         
+        return CGRect(
+            x: area.midX - scaledSize.width / 2,
+            y: area.midY - scaledSize.height / 2,
+            width: scaledSize.width,
+            height: scaledSize.height
+        )
+    }
+    
+    // MARK: - 计算ViewC中的图标位置
+    private func calculateIconRectForViewC(
+        in area: CGRect,
+        iconSize: CGSize,
+        scale: CGFloat
+    ) -> CGRect {
+        // 计算缩放后的尺寸
+        let scaledSize = CGSize(
+            width: iconSize.width * scale,
+            height: iconSize.height * scale
+        )
+        
+        // 计算在区域中的位置（居中）
         return CGRect(
             x: area.midX - scaledSize.width / 2,
             y: area.midY - scaledSize.height / 2,

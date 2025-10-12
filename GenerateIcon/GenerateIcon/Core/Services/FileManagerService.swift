@@ -3,6 +3,26 @@ import SwiftUI
 import UIKit
 import Combine
 import UniformTypeIdentifiers
+import ObjectiveC
+
+// MARK: - 相册保存目标类
+class PhotoLibrarySaveTarget: NSObject {
+    private let completion: (Error?) -> Void
+    
+    init(completion: @escaping (Error?) -> Void) {
+        self.completion = completion
+        super.init()
+    }
+    
+    @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        completion(error)
+    }
+}
+
+// MARK: - 关联键
+private struct AssociatedKeys {
+    static var saveTarget = "saveTarget"
+}
 
 // MARK: - 文件管理服务
 class FileManagerService: ObservableObject {
@@ -67,8 +87,19 @@ class FileManagerService: ObservableObject {
     // MARK: - 保存到相册
     func saveToPhotoLibrary(_ image: UIImage) async throws {
         return try await withCheckedThrowingContinuation { continuation in
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-            continuation.resume()
+            // 创建一个临时的目标对象来处理回调
+            let target = PhotoLibrarySaveTarget { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+            
+            // 保存目标对象的引用，防止被释放
+            objc_setAssociatedObject(image, &AssociatedKeys.saveTarget, target, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            
+            UIImageWriteToSavedPhotosAlbum(image, target, #selector(PhotoLibrarySaveTarget.image(_:didFinishSavingWithError:contextInfo:)), nil)
         }
     }
     

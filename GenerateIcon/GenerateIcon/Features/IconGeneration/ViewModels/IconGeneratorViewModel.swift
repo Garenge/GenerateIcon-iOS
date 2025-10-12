@@ -317,33 +317,49 @@ class IconGeneratorViewModel: ObservableObject {
         do {
             let image: UIImage
             
+            // 使用新的三层渲染方法，确保图标等比例放大到1024x1024
+            let highResSize = CGSize(width: 1024, height: 1024)
+            
+            // 创建高分辨率的预览配置
+            var highResPreviewConfig = PreviewConfigViewModel()
+            highResPreviewConfig.previewSize = highResSize
+            
+            // 复制当前的预览设置
+            highResPreviewConfig.viewABackgroundColor = viewABackgroundColor
+            highResPreviewConfig.viewABorderColor = viewABorderColor
+            highResPreviewConfig.viewACornerRadius = viewACornerRadius
+            highResPreviewConfig.viewAPadding = viewAPadding
+            highResPreviewConfig.viewABorderWidth = viewABorderWidth
+            
+            highResPreviewConfig.viewBBackgroundColor = viewBBackgroundColor
+            highResPreviewConfig.viewBBorderColor = viewBBorderColor
+            highResPreviewConfig.viewBCornerRadius = viewBCornerRadius
+            highResPreviewConfig.viewBPadding = viewBPadding
+            highResPreviewConfig.viewBBorderWidth = viewBBorderWidth
+            highResPreviewConfig.viewBShadowIntensity = viewBShadowIntensity
+            
+            highResPreviewConfig.iconScale = iconScale
+            highResPreviewConfig.iconRotation = iconRotation
+            highResPreviewConfig.iconOpacity = iconOpacity
+            
+            // 创建高分辨率的图标内容
+            var highResIconContent = IconContentViewModel()
+            highResIconContent.contentType = contentType
+            highResIconContent.selectedPresetType = selectedPresetType
+            highResIconContent.customImage = customImage
+            highResIconContent.textConfig = textConfig
+            
+            // 如果是AI模式，使用AI生成的图标
             if isInAIMode, let aiIcon = lastGeneratedIcon {
-                // AI模式：保存AI图+当前背景设置的合成图（ViewA+ViewB+ViewC）
-                image = try await iconGeneratorService.composePreview(
-                    with: aiIcon,
-                    size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                    settings: createIconSettings() // 使用当前的背景设置
-                )
-            } else if let pendingImage = pendingImage {
-                // 预设模式：保存预设图+当前背景设置的合成图（ViewA+ViewB+ViewC）
-                image = try await iconGeneratorService.composePreview(
-                    with: pendingImage,
-                    size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                    settings: createIconSettings() // 使用当前的背景设置
-                )
-            } else {
-                // 兜底：生成当前预设图+背景设置的合成图
-                let presetIcon = try await iconGeneratorService.generateIcon(
-                    type: selectedPresetType,
-                    size: CGSize(width: 1024, height: 1024),
-                    settings: IconSettings() // 生成纯预设图
-                )
-                image = try await iconGeneratorService.composePreview(
-                    with: presetIcon,
-                    size: CGSize(width: 1024, height: 1024),
-                    settings: createIconSettings() // 应用当前背景设置
-                )
+                highResIconContent.customImage = aiIcon
+                highResIconContent.contentType = .custom
             }
+            
+            // 生成高分辨率图标
+            image = try await iconGeneratorService.generatePreview(
+                iconContent: highResIconContent,
+                previewConfig: highResPreviewConfig
+            )
             
             try await fileManagerService.saveToPhotoLibrary(image)
             await MainActor.run {
@@ -492,6 +508,8 @@ extension IconGeneratorViewModel {
 class SettingsService: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let settingsKey = "IconSettings"
+    private let previewConfigKey = "PreviewConfig"
+    private let iconContentKey = "IconContent"
     
     func saveSettings(_ settings: IconSettings) {
         do {
@@ -513,5 +531,58 @@ class SettingsService: ObservableObject {
             print("Failed to load settings: \(error)")
             return IconSettings()
         }
+    }
+    
+    // MARK: - 保存预览配置
+    func savePreviewConfig(_ config: PreviewConfigViewModel) {
+        do {
+            let data = try JSONEncoder().encode(config)
+            userDefaults.set(data, forKey: previewConfigKey)
+        } catch {
+            print("Failed to save preview config: \(error)")
+        }
+    }
+    
+    func loadPreviewConfig() -> PreviewConfigViewModel {
+        guard let data = userDefaults.data(forKey: previewConfigKey) else {
+            return PreviewConfigViewModel()
+        }
+        
+        do {
+            return try JSONDecoder().decode(PreviewConfigViewModel.self, from: data)
+        } catch {
+            print("Failed to load preview config: \(error)")
+            return PreviewConfigViewModel()
+        }
+    }
+    
+    // MARK: - 保存图标内容配置
+    func saveIconContent(_ content: IconContentViewModel) {
+        do {
+            let data = try JSONEncoder().encode(content)
+            userDefaults.set(data, forKey: iconContentKey)
+        } catch {
+            print("Failed to save icon content: \(error)")
+        }
+    }
+    
+    func loadIconContent() -> IconContentViewModel {
+        guard let data = userDefaults.data(forKey: iconContentKey) else {
+            return IconContentViewModel()
+        }
+        
+        do {
+            return try JSONDecoder().decode(IconContentViewModel.self, from: data)
+        } catch {
+            print("Failed to load icon content: \(error)")
+            return IconContentViewModel()
+        }
+    }
+    
+    // MARK: - 清除所有设置
+    func clearAllSettings() {
+        userDefaults.removeObject(forKey: settingsKey)
+        userDefaults.removeObject(forKey: previewConfigKey)
+        userDefaults.removeObject(forKey: iconContentKey)
     }
 }
