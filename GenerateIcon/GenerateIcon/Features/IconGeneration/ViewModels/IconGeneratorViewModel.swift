@@ -348,6 +348,32 @@ class IconGeneratorViewModel: ObservableObject {
             
             print("🔄 IconGeneratorViewModel: 使用最新设置 - contentType: \(currentIconContent.contentType), presetType: \(currentIconContent.selectedPresetType)")
             print("🔄 IconGeneratorViewModel: 最新背景颜色 - viewA: \(currentPreviewConfig.viewABackgroundColor), viewB: \(currentPreviewConfig.viewBBackgroundColor)")
+            print("🔄 IconGeneratorViewModel: 最新图标设置 - scale: \(currentPreviewConfig.iconScale), rotation: \(currentPreviewConfig.iconRotation), opacity: \(currentPreviewConfig.iconOpacity)")
+            print("🔄 IconGeneratorViewModel: 最新文本设置 - text: '\(currentIconContent.textConfig.text)', color: \(currentIconContent.textConfig.textColor)")
+            
+            // 确保使用最新设置
+            print("🔄 IconGeneratorViewModel: 同步最新设置到当前ViewModel")
+            self.contentType = currentIconContent.contentType
+            self.selectedPresetType = currentIconContent.selectedPresetType
+            self.customImage = currentIconContent.customImage
+            self.textConfig = currentIconContent.textConfig
+            
+            self.viewABackgroundColor = currentPreviewConfig.viewABackgroundColor
+            self.viewABorderColor = currentPreviewConfig.viewABorderColor
+            self.viewACornerRadius = currentPreviewConfig.viewACornerRadius
+            self.viewAPadding = currentPreviewConfig.viewAPadding
+            self.viewABorderWidth = currentPreviewConfig.viewABorderWidth
+            
+            self.viewBBackgroundColor = currentPreviewConfig.viewBBackgroundColor
+            self.viewBBorderColor = currentPreviewConfig.viewBBorderColor
+            self.viewBCornerRadius = currentPreviewConfig.viewBCornerRadius
+            self.viewBPadding = currentPreviewConfig.viewBPadding
+            self.viewBBorderWidth = currentPreviewConfig.viewBBorderWidth
+            self.viewBShadowIntensity = currentPreviewConfig.viewBShadowIntensity
+            
+            self.iconScale = currentPreviewConfig.iconScale
+            self.iconRotation = currentPreviewConfig.iconRotation
+            self.iconOpacity = currentPreviewConfig.iconOpacity
             
             // 创建高分辨率的预览配置
             let highResPreviewConfig = PreviewConfigViewModel()
