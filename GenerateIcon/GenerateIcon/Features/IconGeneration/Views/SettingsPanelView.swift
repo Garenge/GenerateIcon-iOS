@@ -42,6 +42,7 @@ struct SettingsPanelView: View {
             .background(Color(.systemBackground))
             
             Divider()
+                .padding(.top, 10)
             
             // 设置选项区域
             ScrollView {
