@@ -30,8 +30,8 @@ struct SettingsPanelView: View {
             // 设置选项区域
             ScrollView {
                 VStack(spacing: 20) {
-                    // 图标内容设置
-                    iconContentSettings
+                    // 当前图标状态显示
+                    currentIconStatus
                     
                     // ViewA 设置
                     viewASettings
@@ -44,7 +44,6 @@ struct SettingsPanelView: View {
                     
                     // 重置按钮
                     Button("重置为默认设置") {
-                        iconContent.clearAll()
                         previewConfig.resetToDefaults()
                     }
                     .padding()
@@ -62,43 +61,52 @@ struct SettingsPanelView: View {
         .shadow(radius: 2)
     }
     
-    // MARK: - 图标内容设置
-    private var iconContentSettings: some View {
+    // MARK: - 当前图标状态显示
+    private var currentIconStatus: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("图标内容设置")
+            Text("当前图标状态")
                 .font(.headline)
                 .fontWeight(.bold)
             
-            Picker("图标类型", selection: $iconContent.contentType) {
-                ForEach(IconContentType.allCases) { type in
-                    Text(type.displayName).tag(type)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            
-            switch iconContent.contentType {
-            case .preset:
-                Picker("预设图标", selection: $iconContent.selectedPresetType) {
-                    ForEach(IconType.allCases) { type in
-                        Text(type.rawValue.capitalized).tag(type)
+            HStack {
+                Image(systemName: iconContent.contentType == .text ? "textformat" : 
+                      iconContent.contentType == .custom ? "photo" : "star.fill")
+                    .foregroundColor(.blue)
+                    .font(.title2)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(iconContent.contentType == .text ? "文字图标" : 
+                         iconContent.contentType == .custom ? "自定义图标" : "预设图标")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    if iconContent.contentType == .preset {
+                        Text(iconContent.selectedPresetType.displayName)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else if iconContent.contentType == .text {
+                        Text(iconContent.textConfig.text.isEmpty ? "TXT" : iconContent.textConfig.text)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
-                .pickerStyle(MenuPickerStyle())
                 
-            case .custom:
-                Text("自定义图标功能待实现")
+                Spacer()
+                
+                Text("\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height))")
+                    .font(.caption)
                     .foregroundColor(.secondary)
-                
-            case .text:
-                textIconSettings
             }
+            .padding()
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(8)
+            
+            Text("💡 提示：要更改图标类型，请使用主界面的图标选择器")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
     
-    // MARK: - 文字图标设置
-    private var textIconSettings: some View {
-        TextIconSettingsView(textConfig: iconContent.textConfig)
-    }
     
     // MARK: - ViewA 设置
     private var viewASettings: some View {

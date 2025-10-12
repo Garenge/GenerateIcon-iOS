@@ -5,7 +5,6 @@ import UIKit
 struct IconGeneratorView: View {
     @EnvironmentObject var globalViewModels: GlobalIconViewModels
     @State private var showingSettings = false
-    @State private var showingAppSettings = false
     @State private var showingSizeSelection = false
     @State private var showingAIModal = false
     @State private var showingIconSelector = false
@@ -177,22 +176,12 @@ struct IconGeneratorView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button(action: {
-                            showingAppSettings.toggle()
-                        }) {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.title2)
-                                .foregroundColor(.accentColor)
-                        }
-                        
-                        Button(action: {
-                            showingSettings.toggle()
-                        }) {
-                            Image(systemName: "gearshape.fill")
-                                .font(.title2)
-                                .foregroundColor(.accentColor)
-                        }
+                    Button(action: {
+                        showingSettings.toggle()
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.title2)
+                            .foregroundColor(.accentColor)
                     }
                 }
             }
@@ -202,9 +191,6 @@ struct IconGeneratorView: View {
                     previewConfig: globalViewModels.previewConfig,
                     isVisible: $showingSettings
                 )
-            }
-            .sheet(isPresented: $showingAppSettings) {
-                AppSettingsView()
             }
             .alert("确认保存", isPresented: $showingSaveConfirmation) {
                 Button("取消", role: .cancel) { }
