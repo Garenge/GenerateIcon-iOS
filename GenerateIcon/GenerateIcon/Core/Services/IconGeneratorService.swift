@@ -348,11 +348,38 @@ class IconGeneratorService: ObservableObject {
             
             // 计算字体大小
             let fontSize = config.effectiveFontSize * (min(size.width, size.height) / 256.0)
-            let font = UIFont(name: config.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize, weight: config.uiFontWeight)
+            
+            // 创建字体，应用文字样式
+            var fontDescriptor: UIFontDescriptor
+            
+            if let customFont = UIFont(name: config.fontFamily, size: fontSize) {
+                // 如果有自定义字体，使用其描述符
+                fontDescriptor = customFont.fontDescriptor
+            } else {
+                // 使用系统字体
+                fontDescriptor = UIFont.systemFont(ofSize: fontSize, weight: config.uiFontWeight).fontDescriptor
+            }
+            
+            // 应用粗体和斜体样式
+            var traits: UIFontDescriptor.SymbolicTraits = []
+            if config.textStyle == .bold || config.textStyle == .boldItalic {
+                traits.insert(.traitBold)
+            }
+            if config.textStyle == .italic || config.textStyle == .boldItalic {
+                traits.insert(.traitItalic)
+            }
+            
+            // 应用样式特征
+            if !traits.isEmpty {
+                fontDescriptor = fontDescriptor.withSymbolicTraits(traits) ?? fontDescriptor
+            }
+            
+            // 重新创建字体
+            let finalFont = UIFont(descriptor: fontDescriptor, size: fontSize)
             
             // 设置文字属性
             let attributes: [NSAttributedString.Key: Any] = [
-                .font: font,
+                .font: finalFont,
                 .foregroundColor: config.textColor.cgColor!
             ]
             

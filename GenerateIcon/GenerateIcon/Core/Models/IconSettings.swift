@@ -123,7 +123,7 @@ enum TextStyle: String, CaseIterable, Identifiable, Codable {
         }
     }
     
-    var weight: Font.Weight {
+    var weight: UIFont.Weight {
         switch self {
         case .normal, .italic: return .regular
         case .bold, .boldItalic: return .bold

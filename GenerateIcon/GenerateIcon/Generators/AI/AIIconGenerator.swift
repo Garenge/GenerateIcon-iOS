@@ -326,13 +326,43 @@ class LocalAIService: AIService {
     
     private func drawText(in context: CGContext, text: String, size: CGSize, settings: AISettings) {
         let fontSize = settings.fontSize == .custom ? (settings.customFontSize ?? 100) : settings.fontSize.size
-        let font = UIFont(name: settings.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        
+        // 创建字体，应用文字样式
+        var font: UIFont
         
         // 使用用户配置的文字颜色
         let textColor = UIColor(settings.textColor.color)
         
+        // 创建字体描述符以应用样式
+        var fontDescriptor: UIFontDescriptor
+        
+        if let customFont = UIFont(name: settings.fontFamily, size: fontSize) {
+            // 如果有自定义字体，使用其描述符
+            fontDescriptor = customFont.fontDescriptor
+        } else {
+            // 使用系统字体
+            fontDescriptor = UIFont.systemFont(ofSize: fontSize, weight: settings.textStyle.weight).fontDescriptor
+        }
+        
+        // 应用粗体样式
+        var traits: UIFontDescriptor.SymbolicTraits = []
+        if settings.textStyle == .bold || settings.textStyle == .boldItalic {
+            traits.insert(.traitBold)
+        }
+        if settings.textStyle == .italic || settings.textStyle == .boldItalic {
+            traits.insert(.traitItalic)
+        }
+        
+        // 应用样式特征
+        if !traits.isEmpty {
+            fontDescriptor = fontDescriptor.withSymbolicTraits(traits) ?? fontDescriptor
+        }
+        
+        // 重新创建字体
+        let finalFont = UIFont(descriptor: fontDescriptor, size: fontSize)
+        
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
+            .font: finalFont,
             .foregroundColor: textColor
         ]
         
