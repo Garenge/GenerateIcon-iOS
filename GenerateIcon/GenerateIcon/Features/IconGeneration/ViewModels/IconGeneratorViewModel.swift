@@ -293,23 +293,21 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     private func generateSingleIcon(type: IconType, size: CGSize) async throws {
-        print("🔧 generateSingleIcon: 开始生成单个图标")
-        
         let image = try await iconGeneratorService.generateIcon(
             type: type,
             size: size,
             settings: createIconSettings()
         )
         
-        print("🔧 generateSingleIcon: 图标生成完成，设置showingSaveConfirmation = true")
-        
         await MainActor.run {
             self.lastGeneratedIcon = image
             self.pendingImage = image
             self.isGenerating = false
             self.showingSaveConfirmation = true
-            print("🔧 generateSingleIcon: showingSaveConfirmation = \(self.showingSaveConfirmation)")
         }
+        
+        // 显示生成成功的Toast
+        HUDToastManager.shared.showSuccessToast(message: "图标生成完成！")
     }
     
     func confirmSaveToPhotoLibrary() async {
@@ -353,7 +351,7 @@ class IconGeneratorViewModel: ObservableObject {
                 self.pendingImage = nil
                 self.showingOpenPhotoLibraryAlert = true
             }
-            // 显示成功Toast
+            // 显示保存成功Toast
             HUDToastManager.shared.showSuccessToast(message: "图标已保存到相册！")
         } catch {
             await MainActor.run {
@@ -394,9 +392,9 @@ class IconGeneratorViewModel: ObservableObject {
             self.isGenerating = false
         }
         
-        // 隐藏HUD并显示成功Toast
+        // 隐藏HUD并显示压缩成功Toast
         HUDToastManager.shared.hideHUD()
-        HUDToastManager.shared.showSuccessToast(message: "iOS图标集生成完成！")
+        HUDToastManager.shared.showSuccessToast(message: "压缩完成！正在弹出系统分享...")
         
         // 分享ZIP文件
         await shareFile(url: zipURL)

@@ -269,20 +269,15 @@ struct IconGeneratorView: View {
         }
         .alert("保存到相册", isPresented: $globalViewModels.iconGenerator.showingSaveConfirmation) {
             Button("取消", role: .cancel) {
-                print("🔧 用户取消保存")
                 iconGenerator.cancelSave()
             }
             Button("保存") {
-                print("🔧 用户确认保存")
                 Task {
                     await iconGenerator.confirmSaveToPhotoLibrary()
                 }
             }
         } message: {
             Text("是否将生成的图标保存到相册？")
-        }
-        .onChange(of: globalViewModels.iconGenerator.showingSaveConfirmation) { newValue in
-            print("🔧 showingSaveConfirmation 变化: \(newValue)")
         }
         .alert("保存成功", isPresented: $globalViewModels.iconGenerator.showingOpenPhotoLibraryAlert) {
             Button("取消", role: .cancel) {

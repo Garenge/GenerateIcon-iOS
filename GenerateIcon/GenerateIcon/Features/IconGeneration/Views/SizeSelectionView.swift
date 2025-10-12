@@ -10,6 +10,8 @@ struct SizeSelectionView: View {
     @State private var selectedSize: CGFloat = 1024
     @State private var customSize: String = "1024"
     @State private var showingCustomSize = false
+    @State private var showingSaveConfirmation = false
+    @State private var showingCompressionConfirmation = false
     
     @Environment(\.dismiss) private var dismiss
     
@@ -41,19 +43,14 @@ struct SizeSelectionView: View {
                     .buttonStyle(.bordered)
                     
                     Button(selectedDownloadType == .ios ? "生成并分享" : "生成并保存") {
-                        let size = selectedDownloadType == .custom ? 
-                            CGSize(width: selectedSize, height: selectedSize) : 
-                            CGSize.zero
-                        
-                        // 显示开始生成的Toast
-                        if selectedDownloadType == .ios {
-                            HUDToastManager.shared.showToast(message: "开始生成iOS图标集...", type: .info, duration: 1.5)
+                        // 根据下载类型显示不同的确认弹窗
+                        if selectedDownloadType == .custom {
+                            // 单图模式：显示保存到相册的确认弹窗
+                            showingSaveConfirmation = true
                         } else {
-                            HUDToastManager.shared.showToast(message: "开始生成 \(Int(selectedSize))px 图标...", type: .info, duration: 1.5)
+                            // 多分辨率模式：显示压缩确认弹窗
+                            showingCompressionConfirmation = true
                         }
-                        
-                        onGenerate(size, selectedDownloadType)
-                        dismiss()
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -63,6 +60,26 @@ struct SizeSelectionView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .hudToast() // 添加HUD和Toast支持
+        .alert("保存到相册", isPresented: $showingSaveConfirmation) {
+            Button("取消", role: .cancel) { }
+            Button("保存") {
+                let size = CGSize(width: selectedSize, height: selectedSize)
+                onGenerate(size, selectedDownloadType)
+                dismiss()
+            }
+        } message: {
+            Text("是否将 \(Int(selectedSize))px 图标保存到相册？")
+        }
+        .alert("压缩确认", isPresented: $showingCompressionConfirmation) {
+            Button("取消", role: .cancel) { }
+            Button("确定压缩") {
+                let size = CGSize.zero // iOS模式不需要指定尺寸
+                onGenerate(size, selectedDownloadType)
+                dismiss()
+            }
+        } message: {
+            Text("是否压缩生成iOS图标集？压缩完成后将弹出系统分享。")
+        }
     }
     
     // MARK: - 自定义尺寸内容
