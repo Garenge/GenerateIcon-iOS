@@ -15,6 +15,12 @@ class PhotoLibrarySaveTarget: NSObject {
     }
     
     @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        print("📸 PhotoLibrarySaveTarget: 收到保存回调")
+        if let error = error {
+            print("❌ PhotoLibrarySaveTarget: 保存失败: \(error.localizedDescription)")
+        } else {
+            print("✅ PhotoLibrarySaveTarget: 保存成功")
+        }
         completion(error)
     }
 }
@@ -86,12 +92,26 @@ class FileManagerService: ObservableObject {
     
     // MARK: - 保存到相册
     func saveToPhotoLibrary(_ image: UIImage) async throws {
+        print("📸 FileManagerService: 开始保存图片到相册")
+        print("📸 FileManagerService: 图片尺寸: \(image.size)")
+        print("📸 FileManagerService: 图片scale: \(image.scale)")
+        
+        // 检查图片是否有效
+        guard !image.size.equalTo(.zero) else {
+            print("❌ FileManagerService: 图片尺寸为0，无法保存")
+            throw NSError(domain: "FileManagerService", code: -1, userInfo: [NSLocalizedDescriptionKey: "图片尺寸无效"])
+        }
+        
         return try await withCheckedThrowingContinuation { continuation in
+            print("📸 FileManagerService: 创建PhotoLibrarySaveTarget")
+            
             // 创建一个临时的目标对象来处理回调
             let target = PhotoLibrarySaveTarget { error in
                 if let error = error {
+                    print("❌ FileManagerService: 保存到相册失败: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 } else {
+                    print("✅ FileManagerService: 保存到相册成功")
                     continuation.resume()
                 }
             }
@@ -99,6 +119,7 @@ class FileManagerService: ObservableObject {
             // 保存目标对象的引用，防止被释放
             objc_setAssociatedObject(image, &AssociatedKeys.saveTarget, target, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             
+            print("📸 FileManagerService: 调用UIImageWriteToSavedPhotosAlbum")
             UIImageWriteToSavedPhotosAlbum(image, target, #selector(PhotoLibrarySaveTarget.image(_:didFinishSavingWithError:contextInfo:)), nil)
         }
     }

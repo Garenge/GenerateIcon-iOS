@@ -311,6 +311,12 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     func confirmSaveToPhotoLibrary() async {
+        print("🔄 IconGeneratorViewModel: 开始保存到相册流程")
+        print("🔄 IconGeneratorViewModel: 当前contentType: \(contentType)")
+        print("🔄 IconGeneratorViewModel: 当前selectedPresetType: \(selectedPresetType)")
+        print("🔄 IconGeneratorViewModel: isInAIMode: \(isInAIMode)")
+        print("🔄 IconGeneratorViewModel: lastGeneratedIcon: \(lastGeneratedIcon != nil ? "有" : "无")")
+        
         // 显示保存开始的Toast
         HUDToastManager.shared.showToast(message: "正在保存到相册...", type: .info, duration: 1.5)
         
@@ -319,9 +325,10 @@ class IconGeneratorViewModel: ObservableObject {
             
             // 使用新的三层渲染方法，确保图标等比例放大到1024x1024
             let highResSize = CGSize(width: 1024, height: 1024)
+            print("🔄 IconGeneratorViewModel: 目标尺寸: \(highResSize)")
             
             // 创建高分辨率的预览配置
-            var highResPreviewConfig = PreviewConfigViewModel()
+            let highResPreviewConfig = PreviewConfigViewModel()
             highResPreviewConfig.previewSize = highResSize
             
             // 复制当前的预览设置
@@ -343,7 +350,7 @@ class IconGeneratorViewModel: ObservableObject {
             highResPreviewConfig.iconOpacity = iconOpacity
             
             // 创建高分辨率的图标内容
-            var highResIconContent = IconContentViewModel()
+            let highResIconContent = IconContentViewModel()
             highResIconContent.contentType = contentType
             highResIconContent.selectedPresetType = selectedPresetType
             highResIconContent.customImage = customImage
@@ -351,17 +358,23 @@ class IconGeneratorViewModel: ObservableObject {
             
             // 如果是AI模式，使用AI生成的图标
             if isInAIMode, let aiIcon = lastGeneratedIcon {
+                print("🔄 IconGeneratorViewModel: 使用AI生成的图标")
                 highResIconContent.customImage = aiIcon
                 highResIconContent.contentType = .custom
             }
             
+            print("🔄 IconGeneratorViewModel: 开始生成高分辨率图标")
             // 生成高分辨率图标
             image = try await iconGeneratorService.generatePreview(
                 iconContent: highResIconContent,
                 previewConfig: highResPreviewConfig
             )
             
+            print("🔄 IconGeneratorViewModel: 图标生成完成，尺寸: \(image.size), scale: \(image.scale)")
+            
+            print("🔄 IconGeneratorViewModel: 开始保存到相册")
             try await fileManagerService.saveToPhotoLibrary(image)
+            
             await MainActor.run {
                 self.showingSaveConfirmation = false
                 self.pendingImage = nil
@@ -370,6 +383,7 @@ class IconGeneratorViewModel: ObservableObject {
             // 显示保存成功Toast
             HUDToastManager.shared.showSuccessToast(message: "图标已保存到相册！")
         } catch {
+            print("❌ IconGeneratorViewModel: 保存到相册失败: \(error)")
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
             }
@@ -538,20 +552,24 @@ class SettingsService: ObservableObject {
         do {
             let data = try JSONEncoder().encode(config)
             userDefaults.set(data, forKey: previewConfigKey)
+            print("💾 SettingsService: 预览配置保存成功")
         } catch {
-            print("Failed to save preview config: \(error)")
+            print("❌ SettingsService: 预览配置保存失败: \(error)")
         }
     }
     
     func loadPreviewConfig() -> PreviewConfigViewModel {
         guard let data = userDefaults.data(forKey: previewConfigKey) else {
+            print("💾 SettingsService: 没有找到保存的预览配置，使用默认值")
             return PreviewConfigViewModel()
         }
         
         do {
-            return try JSONDecoder().decode(PreviewConfigViewModel.self, from: data)
+            let config = try JSONDecoder().decode(PreviewConfigViewModel.self, from: data)
+            print("💾 SettingsService: 预览配置加载成功")
+            return config
         } catch {
-            print("Failed to load preview config: \(error)")
+            print("❌ SettingsService: 预览配置加载失败: \(error)")
             return PreviewConfigViewModel()
         }
     }
@@ -561,20 +579,24 @@ class SettingsService: ObservableObject {
         do {
             let data = try JSONEncoder().encode(content)
             userDefaults.set(data, forKey: iconContentKey)
+            print("💾 SettingsService: 图标内容配置保存成功 - contentType: \(content.contentType), presetType: \(content.selectedPresetType)")
         } catch {
-            print("Failed to save icon content: \(error)")
+            print("❌ SettingsService: 图标内容配置保存失败: \(error)")
         }
     }
     
     func loadIconContent() -> IconContentViewModel {
         guard let data = userDefaults.data(forKey: iconContentKey) else {
+            print("💾 SettingsService: 没有找到保存的图标内容配置，使用默认值")
             return IconContentViewModel()
         }
         
         do {
-            return try JSONDecoder().decode(IconContentViewModel.self, from: data)
+            let content = try JSONDecoder().decode(IconContentViewModel.self, from: data)
+            print("💾 SettingsService: 图标内容配置加载成功 - contentType: \(content.contentType), presetType: \(content.selectedPresetType)")
+            return content
         } catch {
-            print("Failed to load icon content: \(error)")
+            print("❌ SettingsService: 图标内容配置加载失败: \(error)")
             return IconContentViewModel()
         }
     }

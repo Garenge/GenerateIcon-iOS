@@ -167,66 +167,108 @@ class GlobalIconViewModels: ObservableObject {
             .assign(to: \.previewSize, on: previewConfig)
             .store(in: &cancellables)
         
-        // 监听设置变化，自动保存
+        // 监听设置变化，自动保存（减少延迟，提高响应性）
         iconContent.$contentType
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: contentType变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         iconContent.$selectedPresetType
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: selectedPresetType变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$viewABackgroundColor
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: viewABackgroundColor变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$viewBBackgroundColor
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: viewBBackgroundColor变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$viewBCornerRadius
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: viewBCornerRadius变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$viewBPadding
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: viewBPadding变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$iconScale
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: iconScale变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$iconRotation
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: iconRotation变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
         
         previewConfig.$iconOpacity
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: iconOpacity变化，保存设置")
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        // 监听textConfig的变化
+        iconContent.textConfig.$isEnabled
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: textConfig.isEnabled变化，保存设置")
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        iconContent.textConfig.$text
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: textConfig.text变化，保存设置")
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        iconContent.textConfig.$fontSize
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: textConfig.fontSize变化，保存设置")
+                self?.saveSettings()
+            }
+            .store(in: &cancellables)
+        
+        iconContent.textConfig.$textColor
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                print("💾 GlobalIconViewModels: textConfig.textColor变化，保存设置")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
@@ -268,15 +310,18 @@ class GlobalIconViewModels: ObservableObject {
     }
     
     func saveSettings() {
+        print("💾 GlobalIconViewModels: 开始保存设置")
         let settingsService = SettingsService()
         
         // 保存预览配置
+        print("💾 GlobalIconViewModels: 保存预览配置 - contentType: \(iconContent.contentType), presetType: \(iconContent.selectedPresetType)")
         settingsService.savePreviewConfig(previewConfig)
         
         // 保存图标内容配置
+        print("💾 GlobalIconViewModels: 保存图标内容配置")
         settingsService.saveIconContent(iconContent)
         
-        print("🔄 GlobalIconViewModels: Settings saved")
+        print("✅ GlobalIconViewModels: 设置保存完成")
     }
     
     func clearAllSettings() {
