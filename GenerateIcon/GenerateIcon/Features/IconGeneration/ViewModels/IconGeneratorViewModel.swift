@@ -293,17 +293,22 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     private func generateSingleIcon(type: IconType, size: CGSize) async throws {
+        print("🔧 generateSingleIcon: 开始生成单个图标")
+        
         let image = try await iconGeneratorService.generateIcon(
             type: type,
             size: size,
             settings: createIconSettings()
         )
         
+        print("🔧 generateSingleIcon: 图标生成完成，设置showingSaveConfirmation = true")
+        
         await MainActor.run {
             self.lastGeneratedIcon = image
             self.pendingImage = image
             self.isGenerating = false
             self.showingSaveConfirmation = true
+            print("🔧 generateSingleIcon: showingSaveConfirmation = \(self.showingSaveConfirmation)")
         }
     }
     
