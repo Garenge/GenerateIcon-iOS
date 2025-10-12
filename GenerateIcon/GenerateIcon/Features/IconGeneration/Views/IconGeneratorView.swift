@@ -72,7 +72,7 @@ struct IconGeneratorView: View {
                     // 左侧：图标类型选择
                     if geometry.size.width > 800 {
                         IconTypeSelectorView(
-                            selectedType: selectedIconType,
+                            selectedType: globalViewModels.iconContent.selectedPresetType,
                             onAITap: { showingAIModal = true },
                             isInAIMode: iconGenerator.isInAIMode,
                             onExitAI: {
@@ -248,7 +248,7 @@ struct IconGeneratorView: View {
         }
         .sheet(isPresented: $showingIconSelector) {
             IconSelectorView(
-                selectedType: selectedIconType,
+                selectedType: globalViewModels.iconContent.selectedPresetType,
                 onAITap: {
                     showingIconSelector = false
                     showingAIModal = true
