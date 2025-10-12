@@ -97,16 +97,16 @@ struct IconGeneratorView: View {
                                 showingIconSelector = true
                             }) {
                                 HStack {
-                                    Text(iconGenerator.isInAIMode ? "🎨 AI生成" : selectedIconType.displayName)
+                                    Text(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? "🎨 AI生成" : selectedIconType.displayName)
                                         .font(.headline)
                                     Spacer()
                                     Image(systemName: "chevron.down")
                                 }
                                 .padding()
-                                .background(iconGenerator.isInAIMode ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
+                                .background(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
                                 .cornerRadius(8)
                             }
-                            .foregroundColor(iconGenerator.isInAIMode ? .orange : .blue)
+                            .foregroundColor(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? .orange : .blue)
                         }
                         
                         // 预览区域
