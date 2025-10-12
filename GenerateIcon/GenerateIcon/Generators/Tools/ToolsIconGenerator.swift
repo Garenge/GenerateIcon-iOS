@@ -23,7 +23,7 @@ class ToolsIconGenerator: BaseIconGenerator {
     private func renderToolsIcon(size: CGSize, settings: IconSettings) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale    // 使用设备像素比例
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -34,6 +34,9 @@ class ToolsIconGenerator: BaseIconGenerator {
             cgContext.setShouldAntialias(true)
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
+            
+            // 保存图形状态
+            cgContext.saveGState()
             
             // 根据图标类型绘制不同的工具图标
             switch iconType {
@@ -48,6 +51,9 @@ class ToolsIconGenerator: BaseIconGenerator {
             default:
                 drawSettingsIcon(in: cgContext, size: size)
             }
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     

@@ -17,7 +17,7 @@ class KeyboardIconGenerator: BaseIconGenerator {
     private func renderKeyboardIcon(size: CGSize, settings: IconSettings) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale    // 使用设备像素比例
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         

@@ -21,7 +21,7 @@ class AIIconGenerator: BaseIconGenerator {
     private func renderAIIcon(size: CGSize, settings: IconSettings) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale    // 使用设备像素比例
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -33,8 +33,14 @@ class AIIconGenerator: BaseIconGenerator {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 绘制AI生成的图标内容
             drawAIContent(in: cgContext, size: size)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
@@ -160,6 +166,9 @@ class LocalAIService: AIService {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 显式清空为透明背景，避免默认背景色
             cgContext.setBlendMode(.clear)
             cgContext.fill(CGRect(origin: .zero, size: size))
@@ -173,6 +182,9 @@ class LocalAIService: AIService {
                 // 没有匹配到图标，显示文字
                 drawTextIcon(in: cgContext, text: prompt, size: size, settings: settings)
             }
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
@@ -311,6 +323,9 @@ class LocalAIService: AIService {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 显式清空为透明背景，避免默认背景色
             cgContext.setBlendMode(.clear)
             cgContext.fill(CGRect(origin: .zero, size: size))
@@ -321,6 +336,9 @@ class LocalAIService: AIService {
             
             // 绘制文字
             drawText(in: cgContext, text: prompt, size: size, settings: settings)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     

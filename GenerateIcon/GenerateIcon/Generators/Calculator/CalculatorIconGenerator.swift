@@ -20,7 +20,7 @@ class CalculatorIconGenerator: BaseIconGenerator {
     private func renderCalculatorIcon(size: CGSize, settings: IconSettings) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false  // 支持透明度
-        format.scale = 1.0    // 使用设备像素比例
+        format.scale = UIScreen.main.scale  // 使用设备像素比例，提高清晰度
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         
@@ -32,6 +32,9 @@ class CalculatorIconGenerator: BaseIconGenerator {
             cgContext.setAllowsAntialiasing(true)
             cgContext.interpolationQuality = .high
             
+            // 保存图形状态
+            cgContext.saveGState()
+            
             // 绘制计算器主体
             drawCalculatorBody(in: cgContext, size: size)
             
@@ -40,6 +43,9 @@ class CalculatorIconGenerator: BaseIconGenerator {
             
             // 绘制按钮
             drawCalculatorButtons(in: cgContext, size: size)
+            
+            // 恢复图形状态
+            cgContext.restoreGState()
         }
     }
     
