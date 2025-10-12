@@ -97,7 +97,7 @@ struct IconGeneratorView: View {
                                 showingIconSelector = true
                             }) {
                                 HStack {
-                                    Text(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? "🎨 AI生成" : selectedIconType.displayName)
+                                    Text(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? "🎨 AI生成" : globalViewModels.iconContent.selectedPresetType.displayName)
                                         .font(.headline)
                                     Spacer()
                                     Image(systemName: "chevron.down")
