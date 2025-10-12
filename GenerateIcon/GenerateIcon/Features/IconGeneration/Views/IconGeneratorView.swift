@@ -20,7 +20,7 @@ struct IconGeneratorView: View {
     
     // 使用全局状态作为选中的图标类型
     private var selectedIconType: IconType {
-        iconGenerator.selectedPresetType
+        globalViewModels.iconContent.selectedPresetType
     }
     
     // MARK: - 保存到相册
