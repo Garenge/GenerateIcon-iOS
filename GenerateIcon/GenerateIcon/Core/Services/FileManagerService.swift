@@ -4,6 +4,7 @@ import UIKit
 import Combine
 import UniformTypeIdentifiers
 import ObjectiveC
+import ZIPFoundation
 
 // MARK: - 相册保存目标类
 class PhotoLibrarySaveTarget: NSObject {
@@ -81,7 +82,7 @@ class FileManagerService: ObservableObject {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    let zipURL = try self.createZipFileSync(icons: icons, name: name)
+                    let zipURL = try self.createZipFileWithZIPFoundation(icons: icons, name: name)
                     continuation.resume(returning: zipURL)
                 } catch {
                     continuation.resume(throwing: error)
@@ -206,16 +207,26 @@ class FileManagerService: ObservableObject {
             try FileManager.default.copyItem(at: iconURL, to: destinationURL)
         }
         
-        // 创建ZIP文件
+        // 使用系统API创建标准ZIP文件
         let coordinator = NSFileCoordinator()
         var error: NSError?
         
         coordinator.coordinate(readingItemAt: tempDirectory, options: [], error: &error) { url in
             do {
-                let zipData = try self.createZipData(from: url)
+                // 获取目录中的所有文件
+                let fileURLs = try FileManager.default.contentsOfDirectory(
+                    at: url,
+                    includingPropertiesForKeys: nil,
+                    options: [.skipsHiddenFiles]
+                )
+                
+                // 创建标准ZIP数据
+                let zipData = try self.createStandardZip(from: fileURLs)
                 try zipData.write(to: zipURL)
+                
+                print("✅ ZIP文件创建成功: \(zipURL.path)")
             } catch {
-                print("ZIP creation failed: \(error)")
+                print("❌ ZIP creation failed: \(error)")
             }
         }
         
@@ -229,51 +240,239 @@ class FileManagerService: ObservableObject {
         return zipURL
     }
     
-    private func createZipData(from directory: URL) throws -> Data {
-        // 使用系统API创建ZIP文件
-        let coordinator = NSFileCoordinator()
-        var error: NSError?
-        var zipData = Data()
+    // MARK: - 使用ZIPFoundation创建ZIP文件
+    private func createZipFileWithZIPFoundation(icons: [URL], name: String) throws -> URL {
+        print("📦 使用ZIPFoundation创建ZIP文件: \(name)")
         
-        coordinator.coordinate(readingItemAt: directory, options: [], error: &error) { url in
+        // 创建输出目录
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let outputDir = documentsPath.appendingPathComponent("GeneratedIcons")
+        
+        try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true, attributes: nil)
+        
+        // 创建ZIP文件URL
+        let zipURL = outputDir.appendingPathComponent("\(name).zip")
+        
+        // 如果文件已存在，先删除
+        if FileManager.default.fileExists(atPath: zipURL.path) {
+            try FileManager.default.removeItem(at: zipURL)
+        }
+        
+        // 使用ZIPFoundation创建ZIP文件
+        guard let archive = Archive(url: zipURL, accessMode: .create) else {
+            throw NSError(domain: "FileManagerService", code: -1, userInfo: [NSLocalizedDescriptionKey: "无法创建ZIP文件"])
+        }
+        
+        // 添加每个图标文件到ZIP
+        for iconURL in icons {
+            let fileName = iconURL.lastPathComponent
             do {
-                // 获取目录中的所有文件
-                let fileURLs = try FileManager.default.contentsOfDirectory(
-                    at: url,
-                    includingPropertiesForKeys: nil,
-                    options: [.skipsHiddenFiles]
-                )
-                
-                // 创建简单的ZIP格式（简化实现）
-                zipData = try createSimpleZip(from: fileURLs)
+                try archive.addEntry(with: fileName, fileURL: iconURL)
+                print("✅ 添加文件到ZIP: \(fileName)")
             } catch {
-                print("Error creating ZIP: \(error)")
+                print("❌ 添加文件失败: \(fileName), 错误: \(error)")
+                throw error
             }
         }
         
-        if let error = error {
-            throw error
-        }
-        
-        return zipData
+        print("✅ ZIP文件创建成功: \(zipURL.path)")
+        return zipURL
     }
     
-    private func createSimpleZip(from fileURLs: [URL]) throws -> Data {
-        // 简化的ZIP实现，实际项目中建议使用第三方库
+    // MARK: - 创建标准ZIP数据
+    private func createStandardZip(from fileURLs: [URL]) throws -> Data {
+        // 使用完整的ZIP格式，包含中央目录
         var zipData = Data()
+        var centralDirectory = Data()
+        var localHeaderOffsets: [UInt32] = []
         
+        // 为每个文件创建ZIP条目
         for fileURL in fileURLs {
             let fileName = fileURL.lastPathComponent
             let fileData = try Data(contentsOf: fileURL)
             
-            // 添加文件到ZIP（简化实现）
-            zipData.append("PK\u{03}\u{04}".data(using: .ascii)!)
-            zipData.append(fileName.data(using: .utf8)!)
+            // 记录本地文件头偏移
+            localHeaderOffsets.append(UInt32(zipData.count))
+            
+            // 创建本地文件头
+            let localHeader = createLocalFileHeader(fileName: fileName, fileData: fileData)
+            zipData.append(localHeader)
+            
+            // 添加文件数据
             zipData.append(fileData)
+            
+            // 创建中央目录条目
+            let centralEntry = createCentralDirectoryEntry(
+                fileName: fileName,
+                fileData: fileData,
+                localHeaderOffset: localHeaderOffsets.last!
+            )
+            centralDirectory.append(centralEntry)
         }
         
+        // 添加中央目录
+        zipData.append(centralDirectory)
+        
+        // 添加中央目录结束记录
+        let endRecord = createEndOfCentralDirectory(
+            totalEntries: fileURLs.count,
+            centralDirectorySize: centralDirectory.count,
+            centralDirectoryOffset: zipData.count - centralDirectory.count
+        )
+        zipData.append(endRecord)
+        
+        print("✅ 完整ZIP创建成功: \(zipData.count) 字节，包含 \(fileURLs.count) 个文件")
         return zipData
     }
+    
+    // MARK: - 创建本地文件头
+    private func createLocalFileHeader(fileName: String, fileData: Data) -> Data {
+        var header = Data()
+        
+        // 本地文件头签名
+        header.append(contentsOf: [0x50, 0x4B, 0x03, 0x04])
+        
+        // 版本 (2 bytes)
+        header.append(contentsOf: [0x0A, 0x00])
+        
+        // 通用位标志 (2 bytes)
+        header.append(contentsOf: [0x00, 0x00])
+        
+        // 压缩方法 (2 bytes) - 0 = 无压缩
+        header.append(contentsOf: [0x00, 0x00])
+        
+        // 最后修改时间 (2 bytes)
+        header.append(contentsOf: [0x00, 0x00])
+        
+        // 最后修改日期 (2 bytes)
+        header.append(contentsOf: [0x00, 0x00])
+        
+        // CRC-32 (4 bytes) - 简化处理，设为0
+        header.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+        
+        // 压缩后大小 (4 bytes)
+        var compressedSize = UInt32(fileData.count).littleEndian
+        header.append(Data(bytes: &compressedSize, count: 4))
+        
+        // 未压缩大小 (4 bytes)
+        var uncompressedSize = UInt32(fileData.count).littleEndian
+        header.append(Data(bytes: &uncompressedSize, count: 4))
+        
+        // 文件名长度 (2 bytes)
+        var fileNameLength = UInt16(fileName.count).littleEndian
+        header.append(Data(bytes: &fileNameLength, count: 2))
+        
+        // 扩展字段长度 (2 bytes)
+        header.append(contentsOf: [0x00, 0x00])
+        
+        // 文件名
+        header.append(fileName.data(using: .utf8)!)
+        
+        return header
+    }
+    
+    // MARK: - 创建中央目录条目
+    private func createCentralDirectoryEntry(fileName: String, fileData: Data, localHeaderOffset: UInt32) -> Data {
+        var entry = Data()
+        
+        // 中央目录文件头签名
+        entry.append(contentsOf: [0x50, 0x4B, 0x01, 0x02])
+        
+        // 版本 (2 bytes)
+        entry.append(contentsOf: [0x0A, 0x00])
+        
+        // 版本需要 (2 bytes)
+        entry.append(contentsOf: [0x0A, 0x00])
+        
+        // 通用位标志 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 压缩方法 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 最后修改时间 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 最后修改日期 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // CRC-32 (4 bytes)
+        entry.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+        
+        // 压缩后大小 (4 bytes)
+        var compressedSize = UInt32(fileData.count).littleEndian
+        entry.append(Data(bytes: &compressedSize, count: 4))
+        
+        // 未压缩大小 (4 bytes)
+        var uncompressedSize = UInt32(fileData.count).littleEndian
+        entry.append(Data(bytes: &uncompressedSize, count: 4))
+        
+        // 文件名长度 (2 bytes)
+        var fileNameLength = UInt16(fileName.count).littleEndian
+        entry.append(Data(bytes: &fileNameLength, count: 2))
+        
+        // 扩展字段长度 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 注释长度 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 磁盘号开始 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 内部文件属性 (2 bytes)
+        entry.append(contentsOf: [0x00, 0x00])
+        
+        // 外部文件属性 (4 bytes)
+        entry.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+        
+        // 本地文件头偏移 (4 bytes)
+        var localHeaderOffsetBytes = localHeaderOffset.littleEndian
+        entry.append(Data(bytes: &localHeaderOffsetBytes, count: 4))
+        
+        // 文件名
+        entry.append(fileName.data(using: .utf8)!)
+        
+        return entry
+    }
+    
+    // MARK: - 创建中央目录结束记录
+    private func createEndOfCentralDirectory(totalEntries: Int, centralDirectorySize: Int, centralDirectoryOffset: Int) -> Data {
+        var endRecord = Data()
+        
+        // 中央目录结束签名
+        endRecord.append(contentsOf: [0x50, 0x4B, 0x05, 0x06])
+        
+        // 磁盘号 (2 bytes)
+        endRecord.append(contentsOf: [0x00, 0x00])
+        
+        // 中央目录开始磁盘号 (2 bytes)
+        endRecord.append(contentsOf: [0x00, 0x00])
+        
+        // 本磁盘上的中央目录记录数 (2 bytes)
+        var entriesOnDisk = UInt16(totalEntries).littleEndian
+        endRecord.append(Data(bytes: &entriesOnDisk, count: 2))
+        
+        // 中央目录记录总数 (2 bytes)
+        var totalEntriesCount = UInt16(totalEntries).littleEndian
+        endRecord.append(Data(bytes: &totalEntriesCount, count: 2))
+        
+        // 中央目录大小 (4 bytes)
+        var centralDirSize = UInt32(centralDirectorySize).littleEndian
+        endRecord.append(Data(bytes: &centralDirSize, count: 4))
+        
+        // 中央目录偏移 (4 bytes)
+        var centralDirOffset = UInt32(centralDirectoryOffset).littleEndian
+        endRecord.append(Data(bytes: &centralDirOffset, count: 4))
+        
+        // 注释长度 (2 bytes)
+        endRecord.append(contentsOf: [0x00, 0x00])
+        
+        return endRecord
+    }
+    
+    
+    
 }
 
 // MARK: - 错误类型

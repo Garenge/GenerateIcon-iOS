@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - 统一的图标生成ViewModel
-class IconGeneratorViewModel: ObservableObject {
+class IconGeneratorViewModel: NSObject, ObservableObject, UIDocumentInteractionControllerDelegate {
     // MARK: - 核心状态
     @Published var isGenerating = false
     @Published var generationProgress: Double = 0.0
@@ -44,7 +44,8 @@ class IconGeneratorViewModel: ObservableObject {
     private let settingsService = SettingsService()
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    override init() {
+        super.init()
         setupBindings()
     }
     
@@ -409,10 +410,10 @@ class IconGeneratorViewModel: ObservableObject {
             highResIconContent.customImage = currentIconContent.customImage
             highResIconContent.textConfig = currentIconContent.textConfig
             
-            // 如果是AI模式，使用AI生成的图标
-            if isInAIMode, let aiIcon = lastGeneratedIcon {
-                print("🔄 IconGeneratorViewModel: 使用AI生成的图标")
-                highResIconContent.customImage = aiIcon
+            // 如果是AI模式，使用当前预览的图标（而不是lastGeneratedIcon）
+            if isInAIMode, let currentCustomImage = currentIconContent.customImage {
+                print("🔄 IconGeneratorViewModel: 使用当前预览的AI图标")
+                highResIconContent.customImage = currentCustomImage
                 highResIconContent.contentType = .custom
             }
             
@@ -465,9 +466,19 @@ class IconGeneratorViewModel: ObservableObject {
         // 显示生成图标集的HUD
         HUDToastManager.shared.showLoading(message: "正在生成iOS图标集...")
         
-        let urls = try await iconGeneratorService.generateIOSIconSet(
-            type: type,
-            settings: createIconSettings()
+        // 获取当前预览的设置，确保多图生成和单图保存使用相同的设置
+        let globalViewModels = GlobalIconViewModels.shared
+        let currentPreviewConfig = globalViewModels.previewConfig
+        let currentIconContent = globalViewModels.iconContent
+        
+        print("🔄 IconGeneratorViewModel: 多图生成使用当前预览设置")
+        print("🔄 IconGeneratorViewModel: contentType: \(currentIconContent.contentType), presetType: \(currentIconContent.selectedPresetType)")
+        print("🔄 IconGeneratorViewModel: 背景颜色 - viewA: \(currentPreviewConfig.viewABackgroundColor), viewB: \(currentPreviewConfig.viewBBackgroundColor)")
+        print("🔄 IconGeneratorViewModel: 图标设置 - scale: \(currentPreviewConfig.iconScale), rotation: \(currentPreviewConfig.iconRotation), opacity: \(currentPreviewConfig.iconOpacity)")
+        
+        let urls = try await iconGeneratorService.generateIOSIconSetWithPreview(
+            iconContent: currentIconContent,
+            previewConfig: currentPreviewConfig
         )
         
         // 更新进度并显示压缩包生成
@@ -490,37 +501,85 @@ class IconGeneratorViewModel: ObservableObject {
     
     private func shareFile(url: URL) async {
         await MainActor.run {
-            // 使用UIActivityViewController分享文件
+            // 检查文件是否存在和可访问
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                print("❌ 文件不存在: \(url.path)")
+                HUDToastManager.shared.showErrorToast(message: "文件不存在，无法分享")
+                return
+            }
+            
+            // 检查文件是否可读
+            guard FileManager.default.isReadableFile(atPath: url.path) else {
+                print("❌ 文件不可读: \(url.path)")
+                HUDToastManager.shared.showErrorToast(message: "文件不可读，无法分享")
+                return
+            }
+            
+            print("✅ 文件检查通过，开始分享: \(url.path)")
+            
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = windowScene.windows.first,
                let rootViewController = window.rootViewController {
                 
-                let activityViewController = UIActivityViewController(
-                    activityItems: [url],
-                    applicationActivities: nil
-                )
-                
-                // 为iPad设置popover
-                if let popover = activityViewController.popoverPresentationController {
-                    popover.sourceView = window
-                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                    popover.permittedArrowDirections = []
-                }
-                
-                // 添加分享完成回调
-                activityViewController.completionWithItemsHandler = { activityType, completed, returnedItems, error in
-                    DispatchQueue.main.async {
-                        if completed {
-                            HUDToastManager.shared.showSuccessToast(message: "文件分享成功！")
-                        } else if let error = error {
-                            HUDToastManager.shared.showErrorToast(message: "分享失败：\(error.localizedDescription)")
+                do {
+                    // 直接使用UIActivityViewController，这是最可靠的方法
+                    let fileData = try Data(contentsOf: url)
+                    let fileName = url.lastPathComponent
+                    
+                    // 创建临时文件用于分享
+                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+                    try fileData.write(to: tempURL)
+                    
+                    print("✅ 创建临时文件成功: \(tempURL.path)")
+                    
+                    let activityViewController = UIActivityViewController(
+                        activityItems: [tempURL],
+                        applicationActivities: nil
+                    )
+                    
+                    // 为iPad设置popover
+                    if let popover = activityViewController.popoverPresentationController {
+                        popover.sourceView = window
+                        popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                        popover.permittedArrowDirections = []
+                    }
+                    
+                    // 添加分享完成回调
+                    activityViewController.completionWithItemsHandler = { activityType, completed, returnedItems, error in
+                        DispatchQueue.main.async {
+                            // 清理临时文件
+                            try? FileManager.default.removeItem(at: tempURL)
+                            
+                            if completed {
+                                HUDToastManager.shared.showSuccessToast(message: "文件分享成功！")
+                            } else if let error = error {
+                                HUDToastManager.shared.showErrorToast(message: "分享失败：\(error.localizedDescription)")
+                            }
                         }
                     }
+                    
+                    rootViewController.present(activityViewController, animated: true)
+                    
+                } catch {
+                    print("❌ 分享失败: \(error.localizedDescription)")
+                    HUDToastManager.shared.showErrorToast(message: "分享失败：\(error.localizedDescription)")
                 }
-                
-                rootViewController.present(activityViewController, animated: true)
+            } else {
+                print("❌ 无法获取根视图控制器")
+                HUDToastManager.shared.showErrorToast(message: "无法获取分享界面")
             }
         }
+    }
+    
+    // MARK: - UIDocumentInteractionControllerDelegate
+    func documentInteractionController(_ controller: UIDocumentInteractionController, didEndSendingToApplication application: String?) {
+        print("✅ 文件分享成功到应用: \(application ?? "未知")")
+        HUDToastManager.shared.showSuccessToast(message: "文件分享成功！")
+    }
+    
+    func documentInteractionController(_ controller: UIDocumentInteractionController, didFailToSendToApplication application: String?, error: Error) {
+        print("❌ 文件分享失败: \(error.localizedDescription)")
+        HUDToastManager.shared.showErrorToast(message: "分享失败：\(error.localizedDescription)")
     }
     
     // MARK: - 辅助方法

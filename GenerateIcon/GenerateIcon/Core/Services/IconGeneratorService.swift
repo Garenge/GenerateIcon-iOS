@@ -185,6 +185,86 @@ class IconGeneratorService: ObservableObject {
         return urls
     }
     
+    // MARK: - 使用预览设置生成iOS图标集
+    func generateIOSIconSetWithPreview(
+        iconContent: IconContentViewModel,
+        previewConfig: PreviewConfigViewModel
+    ) async throws -> [URL] {
+        await MainActor.run {
+            isGenerating = true
+            generationProgress = 0.0
+        }
+        
+        defer {
+            Task { @MainActor in
+                isGenerating = false
+                generationProgress = 0.0
+            }
+        }
+        
+        var urls: [URL] = []
+        let iosSizes = SizePreset.iosSizes
+        let fileManager = FileManagerService()
+        
+        print("🔄 IconGeneratorService: 开始生成iOS图标集，使用预览设置")
+        print("🔄 IconGeneratorService: 图标内容 - contentType: \(iconContent.contentType), presetType: \(iconContent.selectedPresetType)")
+        print("🔄 IconGeneratorService: 预览配置 - viewA背景: \(previewConfig.viewABackgroundColor), viewB背景: \(previewConfig.viewBBackgroundColor)")
+        
+        for (index, preset) in iosSizes.enumerated() {
+            let size = CGSize(width: preset.size, height: preset.size)
+            print("🔄 IconGeneratorService: 生成图标 \(preset.name) - 尺寸: \(size)")
+            
+            // 创建高分辨率配置的副本
+            let highResPreviewConfig = PreviewConfigViewModel()
+            highResPreviewConfig.previewSize = size
+            
+            // 复制所有设置
+            highResPreviewConfig.viewABackgroundColor = previewConfig.viewABackgroundColor
+            highResPreviewConfig.viewABorderColor = previewConfig.viewABorderColor
+            highResPreviewConfig.viewACornerRadius = previewConfig.viewACornerRadius
+            highResPreviewConfig.viewAPadding = previewConfig.viewAPadding
+            highResPreviewConfig.viewABorderWidth = previewConfig.viewABorderWidth
+            
+            highResPreviewConfig.viewBBackgroundColor = previewConfig.viewBBackgroundColor
+            highResPreviewConfig.viewBBorderColor = previewConfig.viewBBorderColor
+            highResPreviewConfig.viewBCornerRadius = previewConfig.viewBCornerRadius
+            highResPreviewConfig.viewBPadding = previewConfig.viewBPadding
+            highResPreviewConfig.viewBBorderWidth = previewConfig.viewBBorderWidth
+            highResPreviewConfig.viewBShadowIntensity = previewConfig.viewBShadowIntensity
+            
+            highResPreviewConfig.iconScale = previewConfig.iconScale
+            highResPreviewConfig.iconRotation = previewConfig.iconRotation
+            highResPreviewConfig.iconOpacity = previewConfig.iconOpacity
+            
+            // 创建高分辨率图标内容的副本
+            let highResIconContent = IconContentViewModel()
+            highResIconContent.contentType = iconContent.contentType
+            highResIconContent.selectedPresetType = iconContent.selectedPresetType
+            highResIconContent.customImage = iconContent.customImage
+            highResIconContent.textConfig = iconContent.textConfig
+            
+            // 使用预览方法生成图标，确保和单图保存使用相同的渲染逻辑
+            let icon = try await generatePreview(
+                iconContent: highResIconContent,
+                previewConfig: highResPreviewConfig
+            )
+            
+            if let url = try await fileManager.saveIcon(
+                icon,
+                name: preset.name,
+                size: size
+            ) {
+                urls.append(url)
+                print("✅ IconGeneratorService: 保存图标 \(preset.name) 成功")
+            }
+            
+            await updateProgress(Double(index + 1) / Double(iosSizes.count))
+        }
+        
+        print("✅ IconGeneratorService: iOS图标集生成完成，共 \(urls.count) 个图标")
+        return urls
+    }
+    
     // MARK: - 渲染三层图标
     private func renderThreeLayerIcon(
         iconContent: IconContentViewModel,
