@@ -7,7 +7,12 @@ struct SettingsPanelView: View {
     @Binding var isVisible: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 0) {
+            // 顶部预览区域 - 和AI生成页面一致
+            previewSection
+            
+            Divider()
+            
             // 顶部区域：标题和关闭按钮
             HStack {
                 Text("🎨 图标设置")
@@ -59,6 +64,20 @@ struct SettingsPanelView: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
+    }
+    
+    // MARK: - 预览区域
+    private var previewSection: some View {
+        ZStack {
+            // 显示SimpleIconPreview，和AI生成页面保持一致
+            SimpleIconPreview()
+                .frame(height: 120)
+        }
+        .frame(height: 120)
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .padding(.bottom, 16)
+        .background(Color(.systemBackground))
     }
     
     // MARK: - 当前图标状态显示
