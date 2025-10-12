@@ -284,10 +284,14 @@ class GlobalIconViewModels: ObservableObject {
     
     func setPresetIcon(_ type: IconType) {
         iconGenerator.setPresetIcon(type)
+        iconContent.setPresetIcon(type)
+        print("🔄 GlobalIconViewModels: setPresetIcon - \(type.displayName)")
     }
     
     func setCustomIcon(_ image: UIImage?) {
         iconGenerator.setCustomIcon(image)
+        iconContent.setCustomIcon(image)
+        print("🔄 GlobalIconViewModels: setCustomIcon - \(image != nil ? "设置自定义图标" : "清除自定义图标")")
     }
     
     func setTextIcon(_ config: TextIconConfigViewModel) {
