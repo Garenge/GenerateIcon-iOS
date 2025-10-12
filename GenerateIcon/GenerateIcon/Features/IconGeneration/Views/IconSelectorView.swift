@@ -114,7 +114,7 @@ struct IconSelectorView: View {
                     }
                 }
             }
-            .navigationTitle("选择图标类型")
+            .navigationTitle("选择图标类型 - \(selectedType.displayName)")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

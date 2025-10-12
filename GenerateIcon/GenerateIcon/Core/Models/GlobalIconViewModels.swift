@@ -178,8 +178,8 @@ class GlobalIconViewModels: ObservableObject {
         
         iconContent.$selectedPresetType
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                print("💾 GlobalIconViewModels: selectedPresetType变化，保存设置")
+            .sink { [weak self] newType in
+                print("💾 GlobalIconViewModels: selectedPresetType变化，保存设置 - 新类型: \(newType.displayName)")
                 self?.saveSettings()
             }
             .store(in: &cancellables)
@@ -283,8 +283,15 @@ class GlobalIconViewModels: ObservableObject {
     }
     
     func setPresetIcon(_ type: IconType) {
+        print("🚀 GlobalIconViewModels: setPresetIcon 开始 - 新图标类型: \(type.displayName)")
+        print("🚀 GlobalIconViewModels: 更新前状态 - iconContent contentType: \(iconContent.contentType), selectedPresetType: \(iconContent.selectedPresetType.displayName)")
+        print("🚀 GlobalIconViewModels: 更新前状态 - iconGenerator contentType: \(iconGenerator.contentType), selectedPresetType: \(iconGenerator.selectedPresetType.displayName)")
+        
         iconGenerator.setPresetIcon(type)
         iconContent.setPresetIcon(type)
+        
+        print("🚀 GlobalIconViewModels: setPresetIcon 结束 - 更新后状态 - iconContent contentType: \(iconContent.contentType), selectedPresetType: \(iconContent.selectedPresetType.displayName)")
+        print("🚀 GlobalIconViewModels: setPresetIcon 结束 - 更新后状态 - iconGenerator contentType: \(iconGenerator.contentType), selectedPresetType: \(iconGenerator.selectedPresetType.displayName)")
         print("🔄 GlobalIconViewModels: setPresetIcon - \(type.displayName)")
     }
     

@@ -12,6 +12,7 @@ struct IconGeneratorView: View {
     @State private var showingSaveAlert = false
     @State private var saveAlertMessage = ""
     @State private var isSaving = false
+    @State private var buttonRefreshTrigger = 0 // 用于强制刷新按钮
     
     // 便捷访问全局ViewModel
     private var iconGenerator: IconGeneratorViewModel {
@@ -80,8 +81,13 @@ struct IconGeneratorView: View {
                                 iconGenerator.refreshPreview()
                             },
                             onPresetSelected: { newType in
+                                print("🚀 IconGeneratorView: onPresetSelected 回调开始 - 新图标类型: \(newType.displayName)")
+                                print("🚀 IconGeneratorView: 当前状态 - contentType: \(globalViewModels.iconContent.contentType), selectedPresetType: \(globalViewModels.iconContent.selectedPresetType.displayName)")
+                                
                                 // 选择预设图标时更新全局状态并刷新预览
                                 globalViewModels.setPresetIcon(newType)
+                                
+                                print("🚀 IconGeneratorView: onPresetSelected 回调结束 - 更新后状态 - contentType: \(globalViewModels.iconContent.contentType), selectedPresetType: \(globalViewModels.iconContent.selectedPresetType.displayName)")
                                 print("🔄 IconGeneratorView: Preset icon changed to \(newType.displayName)")
                             }
                         )
@@ -99,14 +105,30 @@ struct IconGeneratorView: View {
                                 HStack {
                                     Text(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? "🎨 AI生成" : globalViewModels.iconContent.selectedPresetType.displayName)
                                         .font(.headline)
+                                        .id("button-text-\(globalViewModels.iconContent.selectedPresetType.rawValue)-\(buttonRefreshTrigger)") // 强制刷新
+                                        .onAppear {
+                                            print("🖥️ UI Text显示: contentType=\(globalViewModels.iconContent.contentType), selectedPresetType=\(globalViewModels.iconContent.selectedPresetType.displayName)")
+                                        }
+                                        .onChange(of: globalViewModels.iconContent.selectedPresetType) { newType in
+                                            print("🖥️ UI Text变化: 新类型=\(newType.displayName)")
+                                        }
                                     Spacer()
                                     Image(systemName: "chevron.down")
+                                }
+                                .onAppear {
+                                    print("🖥️ HStack显示: 当前选中图标=\(globalViewModels.iconContent.selectedPresetType.displayName)")
+                                }
+                                .onChange(of: globalViewModels.iconContent.selectedPresetType) { newType in
+                                    print("🖥️ HStack变化: 新选中图标=\(newType.displayName)")
                                 }
                                 .padding()
                                 .background(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
                                 .cornerRadius(8)
                             }
                             .foregroundColor(globalViewModels.iconContent.contentType == .custom && globalViewModels.iconContent.customImage != nil ? .orange : .blue)
+                            .onAppear {
+                                print("📱 小屏设备按钮已显示 - 屏幕宽度: \(geometry.size.width)")
+                            }
                         }
                         
                         // 预览区域
@@ -158,6 +180,10 @@ struct IconGeneratorView: View {
                         )
                         .frame(width: 300)
                     }
+                }
+                .onAppear {
+                    print("📱 屏幕尺寸: width=\(geometry.size.width), height=\(geometry.size.height)")
+                    print("📱 布局模式: \(geometry.size.width > 800 ? "大屏模式(左侧选择器)" : "小屏模式(顶部按钮)")")
                 }
             }
             .navigationTitle("图标生成器")
@@ -259,8 +285,20 @@ struct IconGeneratorView: View {
                     iconGenerator.refreshPreview()
                 },
                 onPresetSelected: { newType in
+                    print("🚀 IconGeneratorView: IconSelectorView onPresetSelected 回调开始 - 新图标类型: \(newType.displayName)")
+                    print("🚀 IconGeneratorView: 当前状态 - contentType: \(globalViewModels.iconContent.contentType), selectedPresetType: \(globalViewModels.iconContent.selectedPresetType.displayName)")
+                    
                     // 选择预设图标时更新全局状态并刷新预览
                     globalViewModels.setPresetIcon(newType)
+                    
+                    // 强制刷新UI
+                    DispatchQueue.main.async {
+                        print("🔄 强制刷新UI - 新图标: \(newType.displayName)")
+                        buttonRefreshTrigger += 1
+                        print("🔄 按钮刷新触发器更新: \(buttonRefreshTrigger)")
+                    }
+                    
+                    print("🚀 IconGeneratorView: IconSelectorView onPresetSelected 回调结束 - 更新后状态 - contentType: \(globalViewModels.iconContent.contentType), selectedPresetType: \(globalViewModels.iconContent.selectedPresetType.displayName)")
                     print("🔄 IconGeneratorView: Preset icon changed to \(newType.displayName)")
                 }
             )

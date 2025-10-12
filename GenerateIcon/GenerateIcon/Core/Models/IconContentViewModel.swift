@@ -67,10 +67,15 @@ class IconContentViewModel: ObservableObject, Codable {
     
     // MARK: - 方法
     func setPresetIcon(_ type: IconType) {
+        print("🚀 IconContentViewModel: setPresetIcon 开始 - 新图标类型: \(type.displayName)")
+        print("🚀 IconContentViewModel: 更新前状态 - contentType: \(contentType), selectedPresetType: \(selectedPresetType.displayName)")
+        
         contentType = .preset
         selectedPresetType = type
         customImage = nil
         textConfig.disableTextIcon()
+        
+        print("🚀 IconContentViewModel: setPresetIcon 结束 - 更新后状态 - contentType: \(contentType), selectedPresetType: \(selectedPresetType.displayName)")
     }
     
     func setCustomIcon(_ image: UIImage?) {

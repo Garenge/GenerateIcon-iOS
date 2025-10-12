@@ -78,10 +78,15 @@ class IconGeneratorViewModel: ObservableObject {
     
     // MARK: - 图标内容管理方法
     func setPresetIcon(_ type: IconType) {
+        print("🚀 IconGeneratorViewModel: setPresetIcon 开始 - 新图标类型: \(type.displayName)")
+        print("🚀 IconGeneratorViewModel: 更新前状态 - contentType: \(contentType), selectedPresetType: \(selectedPresetType.displayName)")
+        
         contentType = .preset
         selectedPresetType = type
         customImage = nil
         textConfig.disableTextIcon()
+        
+        print("🚀 IconGeneratorViewModel: setPresetIcon 结束 - 更新后状态 - contentType: \(contentType), selectedPresetType: \(selectedPresetType.displayName)")
     }
     
     func setCustomIcon(_ image: UIImage?) {
