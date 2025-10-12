@@ -185,16 +185,8 @@ class IconGeneratorViewModel: ObservableObject {
                 self.isGenerating = false
             }
             
-            // 生成完整的ViewA+ViewB+ViewC合成图标并保存到相册（AI图+当前背景设置）
-            let finalIcon = try await iconGeneratorService.composePreview(
-                with: aiIcon,
-                size: CGSize(width: 1024, height: 1024), // 高分辨率保存
-                settings: self.createIconSettings() // 使用当前的背景设置
-            )
-            try await fileManagerService.saveToPhotoLibrary(finalIcon)
-            
-            // 显示成功Toast
-            HUDToastManager.shared.showSuccessToast(message: "AI图标生成并保存成功！")
+            // 显示成功Toast（不保存，只是生成图标供预览使用）
+            HUDToastManager.shared.showSuccessToast(message: "AI图标生成成功！")
             
         } catch {
             await MainActor.run {
