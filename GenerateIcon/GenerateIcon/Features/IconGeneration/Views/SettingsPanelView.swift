@@ -9,34 +9,43 @@ struct SettingsPanelView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 顶部预览区域 - 和AI生成页面一致
-            previewSection
-            
-            Divider()
-            
-            // 顶部区域：标题和关闭按钮
-            HStack {
-                Text("🎨 图标设置")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+            ZStack {
+                // 预览图
+                SimpleIconPreview()
+                    .frame(height: 120)
                 
-                Spacer()
-                
-                Button(action: {
-                    isVisible = false
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.title3)
+                // 标题和关闭按钮 - 覆盖在预览图顶部
+                VStack {
+                    HStack {
+                        Text("🎨 图标设置")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            isVisible = false
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.title3)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    
+                    Spacer()
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
+            .frame(height: 120)
+            .background(Color(.systemBackground))
+            
+            Divider()
             
             // 设置选项区域
             ScrollView {
                 VStack(spacing: 20) {
-                    // 当前图标状态显示
-                    currentIconStatus
                     
                     // ViewA 设置
                     viewASettings
@@ -66,65 +75,6 @@ struct SettingsPanelView: View {
         .shadow(radius: 2)
     }
     
-    // MARK: - 预览区域
-    private var previewSection: some View {
-        ZStack {
-            // 显示SimpleIconPreview，和AI生成页面保持一致
-            SimpleIconPreview()
-                .frame(height: 120)
-        }
-        .frame(height: 120)
-        .padding(.horizontal)
-        .padding(.top, 4)
-        .padding(.bottom, 16)
-        .background(Color(.systemBackground))
-    }
-    
-    // MARK: - 当前图标状态显示
-    private var currentIconStatus: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("当前图标状态")
-                .font(.headline)
-                .fontWeight(.bold)
-            
-            HStack {
-                Image(systemName: iconContent.contentType == .text ? "textformat" : 
-                      iconContent.contentType == .custom ? "photo" : "star.fill")
-                    .foregroundColor(.blue)
-                    .font(.title2)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(iconContent.contentType == .text ? "文字图标" : 
-                         iconContent.contentType == .custom ? "自定义图标" : "预设图标")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    if iconContent.contentType == .preset {
-                        Text(iconContent.selectedPresetType.displayName)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else if iconContent.contentType == .text {
-                        Text(iconContent.textConfig.text.isEmpty ? "TXT" : iconContent.textConfig.text)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                Text("\(Int(previewConfig.previewSize.width))x\(Int(previewConfig.previewSize.height))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(8)
-            
-            Text("💡 提示：要更改图标类型，请使用主界面的图标选择器")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
     
     
     // MARK: - ViewA 设置
