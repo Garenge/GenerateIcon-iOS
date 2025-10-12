@@ -97,26 +97,7 @@ struct SettingsPanelView: View {
     
     // MARK: - 文字图标设置
     private var textIconSettings: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            TextField("文字内容", text: $iconContent.textConfig.text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            Picker("字体大小", selection: $iconContent.textConfig.fontSize) {
-                ForEach(FontSize.allCases) { size in
-                    Text(size.rawValue.capitalized).tag(size)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            
-            ColorPicker("文字颜色", selection: $iconContent.textConfig.textColor)
-            
-            Picker("文字样式", selection: $iconContent.textConfig.textStyle) {
-                ForEach(TextStyle.allCases) { style in
-                    Text(style.rawValue.capitalized).tag(style)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-        }
+        TextIconSettingsView(textConfig: iconContent.textConfig)
     }
     
     // MARK: - ViewA 设置

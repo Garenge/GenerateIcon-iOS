@@ -33,8 +33,10 @@ struct AppSettingsView: View {
                             .buttonStyle(.bordered)
                             
                             Button("切换到文字图标") {
-                                iconContent.textConfig.enableTextIcon()
-                                globalViewModels.setTextIcon(iconContent.textConfig)
+                                // 直接通过globalViewModels设置，避免循环引用
+                                let textConfig = TextIconConfigViewModel()
+                                textConfig.enableTextIcon()
+                                globalViewModels.setTextIcon(textConfig)
                             }
                             .buttonStyle(.bordered)
                             
@@ -112,6 +114,14 @@ struct AppSettingsView: View {
                                     get: { previewConfig.viewAPadding },
                                     set: { previewConfig.viewAPadding = $0 }
                                 ), in: 0...50)
+                            }
+                            
+                            HStack {
+                                Text("边框宽度: \(Int(previewConfig.viewABorderWidth))")
+                                Slider(value: Binding(
+                                    get: { previewConfig.viewABorderWidth },
+                                    set: { previewConfig.viewABorderWidth = $0 }
+                                ), in: 0...10)
                             }
                         }
                         
@@ -236,38 +246,7 @@ struct AppSettingsView: View {
     
     // MARK: - 文字图标设置
     private var textIconSettings: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            TextField("文字内容", text: Binding(
-                get: { iconContent.textConfig.text },
-                set: { iconContent.textConfig.text = $0 }
-            ))
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            Picker("字体大小", selection: Binding(
-                get: { iconContent.textConfig.fontSize },
-                set: { iconContent.textConfig.fontSize = $0 }
-            )) {
-                ForEach(FontSize.allCases) { size in
-                    Text(size.rawValue.capitalized).tag(size)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            
-            ColorPicker("文字颜色", selection: Binding(
-                get: { iconContent.textConfig.textColor },
-                set: { iconContent.textConfig.textColor = $0 }
-            ))
-            
-            Picker("文字样式", selection: Binding(
-                get: { iconContent.textConfig.textStyle },
-                set: { iconContent.textConfig.textStyle = $0 }
-            )) {
-                ForEach(TextStyle.allCases) { style in
-                    Text(style.rawValue.capitalized).tag(style)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-        }
+        TextIconSettingsView(textConfig: iconContent.textConfig)
     }
 }
 
