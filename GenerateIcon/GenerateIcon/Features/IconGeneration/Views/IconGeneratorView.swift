@@ -266,7 +266,8 @@ struct IconGeneratorView: View {
             )
         }
         .onAppear {
-            iconGenerator.loadSettings()
+            // 设置已经在GlobalIconViewModels中加载，无需重复加载
+            print("🔄 IconGeneratorView: onAppear - 设置已在GlobalIconViewModels中加载")
         }
         .alert("保存到相册", isPresented: $globalViewModels.iconGenerator.showingSaveConfirmation) {
             Button("取消", role: .cancel) {

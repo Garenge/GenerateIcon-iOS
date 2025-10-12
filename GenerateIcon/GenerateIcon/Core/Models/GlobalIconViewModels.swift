@@ -307,6 +307,50 @@ class GlobalIconViewModels: ObservableObject {
         iconContent = savedIconContent
         
         print("🔄 GlobalIconViewModels: Settings loaded - contentType=\(iconContent.contentType), presetType=\(iconContent.selectedPresetType.displayName)")
+        
+        // 将加载的设置同步到iconGenerator
+        syncLoadedSettingsToIconGenerator()
+    }
+    
+    // MARK: - 将加载的设置同步到iconGenerator
+    private func syncLoadedSettingsToIconGenerator() {
+        print("🔄 GlobalIconViewModels: 将加载的设置同步到iconGenerator")
+        
+        // 同步图标内容设置
+        iconGenerator.contentType = iconContent.contentType
+        iconGenerator.selectedPresetType = iconContent.selectedPresetType
+        iconGenerator.customImage = iconContent.customImage
+        
+        // 同步文本配置
+        iconGenerator.textConfig.isEnabled = iconContent.textConfig.isEnabled
+        iconGenerator.textConfig.text = iconContent.textConfig.text
+        iconGenerator.textConfig.fontSize = iconContent.textConfig.fontSize
+        iconGenerator.textConfig.fontFamily = iconContent.textConfig.fontFamily
+        iconGenerator.textConfig.textStyle = iconContent.textConfig.textStyle
+        iconGenerator.textConfig.textColor = iconContent.textConfig.textColor
+        iconGenerator.textConfig.customFontSize = iconContent.textConfig.customFontSize
+        iconGenerator.textConfig.maxLength = iconContent.textConfig.maxLength
+        iconGenerator.textConfig.textWrap = iconContent.textConfig.textWrap
+        
+        // 同步预览配置
+        iconGenerator.viewABackgroundColor = previewConfig.viewABackgroundColor
+        iconGenerator.viewABorderColor = previewConfig.viewABorderColor
+        iconGenerator.viewACornerRadius = previewConfig.viewACornerRadius
+        iconGenerator.viewAPadding = previewConfig.viewAPadding
+        iconGenerator.viewABorderWidth = previewConfig.viewABorderWidth
+        
+        iconGenerator.viewBBackgroundColor = previewConfig.viewBBackgroundColor
+        iconGenerator.viewBBorderColor = previewConfig.viewBBorderColor
+        iconGenerator.viewBCornerRadius = previewConfig.viewBCornerRadius
+        iconGenerator.viewBPadding = previewConfig.viewBPadding
+        iconGenerator.viewBBorderWidth = previewConfig.viewBBorderWidth
+        iconGenerator.viewBShadowIntensity = previewConfig.viewBShadowIntensity
+        
+        iconGenerator.iconScale = previewConfig.iconScale
+        iconGenerator.iconRotation = previewConfig.iconRotation
+        iconGenerator.iconOpacity = previewConfig.iconOpacity
+        
+        print("✅ GlobalIconViewModels: 设置同步完成 - contentType=\(iconGenerator.contentType), presetType=\(iconGenerator.selectedPresetType.displayName)")
     }
     
     func saveSettings() {
