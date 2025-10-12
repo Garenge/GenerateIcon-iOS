@@ -215,6 +215,7 @@ struct IconGeneratorView: View {
                 iconType: selectedIconType,
                 settings: IconSettings(), // 使用默认设置，因为现在设置已经整合到iconGenerator中
                 onGenerate: { size, downloadType in
+                    print("🔄 IconGeneratorView: onGenerate回调被调用 - size: \(size), downloadType: \(downloadType)")
                     Task {
                         await iconGenerator.generateIcon(
                             type: selectedIconType,

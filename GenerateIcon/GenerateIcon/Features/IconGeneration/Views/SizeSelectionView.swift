@@ -43,12 +43,15 @@ struct SizeSelectionView: View {
                     .buttonStyle(.bordered)
                     
                     Button(selectedDownloadType == .ios ? "生成并分享" : "生成并保存") {
+                        print("🔄 SizeSelectionView: 下载按钮被点击 - downloadType: \(selectedDownloadType), size: \(selectedSize)")
                         // 根据下载类型显示不同的确认弹窗
                         if selectedDownloadType == .custom {
                             // 单图模式：显示保存到相册的确认弹窗
+                            print("🔄 SizeSelectionView: 显示保存确认弹窗")
                             showingSaveConfirmation = true
                         } else {
                             // 多分辨率模式：显示压缩确认弹窗
+                            print("🔄 SizeSelectionView: 显示压缩确认弹窗")
                             showingCompressionConfirmation = true
                         }
                     }
@@ -61,9 +64,12 @@ struct SizeSelectionView: View {
         }
         .hudToast() // 添加HUD和Toast支持
         .alert("保存到相册", isPresented: $showingSaveConfirmation) {
-            Button("取消", role: .cancel) { }
+            Button("取消", role: .cancel) { 
+                print("🔄 SizeSelectionView: 用户取消保存")
+            }
             Button("保存") {
                 let size = CGSize(width: selectedSize, height: selectedSize)
+                print("🔄 SizeSelectionView: 用户确认保存 - size: \(size), downloadType: \(selectedDownloadType)")
                 onGenerate(size, selectedDownloadType)
                 dismiss()
             }

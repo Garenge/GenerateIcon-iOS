@@ -132,6 +132,8 @@ class IconGeneratorViewModel: ObservableObject {
         size: CGSize,
         downloadType: DownloadType
     ) async {
+        print("🔄 IconGeneratorViewModel: generateIcon开始 - type: \(type), size: \(size), downloadType: \(downloadType)")
+        
         await MainActor.run {
             isGenerating = true
             generationProgress = 0.0
@@ -143,11 +145,14 @@ class IconGeneratorViewModel: ObservableObject {
         
         do {
             if downloadType == .ios {
+                print("🔄 IconGeneratorViewModel: 生成iOS图标集")
                 try await generateIOSIconSet(type: type)
             } else {
+                print("🔄 IconGeneratorViewModel: 生成单图")
                 try await generateSingleIcon(type: type, size: size)
             }
         } catch {
+            print("❌ IconGeneratorViewModel: 生成失败: \(error)")
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
                 self.isGenerating = false
@@ -293,21 +298,30 @@ class IconGeneratorViewModel: ObservableObject {
     }
     
     private func generateSingleIcon(type: IconType, size: CGSize) async throws {
+        print("🔄 IconGeneratorViewModel: generateSingleIcon开始 - type: \(type), size: \(size)")
+        
         let image = try await iconGeneratorService.generateIcon(
             type: type,
             size: size,
             settings: createIconSettings()
         )
         
+        print("🔄 IconGeneratorViewModel: 图标生成完成，尺寸: \(image.size), scale: \(image.scale)")
+        
         await MainActor.run {
             self.lastGeneratedIcon = image
             self.pendingImage = image
             self.isGenerating = false
-            self.showingSaveConfirmation = true
+            // 不显示确认弹窗，直接保存到相册
+            self.showingSaveConfirmation = false
         }
         
         // 显示生成成功的Toast
         HUDToastManager.shared.showSuccessToast(message: "图标生成完成！")
+        
+        // 直接调用保存到相册
+        print("🔄 IconGeneratorViewModel: 开始直接保存到相册")
+        await confirmSaveToPhotoLibrary()
     }
     
     func confirmSaveToPhotoLibrary() async {
