@@ -375,34 +375,19 @@ class IconGeneratorViewModel: ObservableObject {
             self.iconRotation = currentPreviewConfig.iconRotation
             self.iconOpacity = currentPreviewConfig.iconOpacity
             
-            // 创建高分辨率的预览配置
-            let highResPreviewConfig = PreviewConfigViewModel()
+            // 强制等待一小段时间，确保所有异步更新完成
+            try await Task.sleep(nanoseconds: 100_000_000) // 0.1秒
+            print("🔄 IconGeneratorViewModel: 等待异步更新完成")
+            
+            // 强制保存设置，确保最新设置已保存
+            globalViewModels.saveSettings()
+            print("🔄 IconGeneratorViewModel: 强制保存设置完成")
+            
+            // 直接使用GlobalIconViewModels中的对象，确保数据一致性
+            let highResPreviewConfig = currentPreviewConfig
             highResPreviewConfig.previewSize = highResSize
             
-            // 使用GlobalIconViewModels中的最新设置
-            highResPreviewConfig.viewABackgroundColor = currentPreviewConfig.viewABackgroundColor
-            highResPreviewConfig.viewABorderColor = currentPreviewConfig.viewABorderColor
-            highResPreviewConfig.viewACornerRadius = currentPreviewConfig.viewACornerRadius
-            highResPreviewConfig.viewAPadding = currentPreviewConfig.viewAPadding
-            highResPreviewConfig.viewABorderWidth = currentPreviewConfig.viewABorderWidth
-            
-            highResPreviewConfig.viewBBackgroundColor = currentPreviewConfig.viewBBackgroundColor
-            highResPreviewConfig.viewBBorderColor = currentPreviewConfig.viewBBorderColor
-            highResPreviewConfig.viewBCornerRadius = currentPreviewConfig.viewBCornerRadius
-            highResPreviewConfig.viewBPadding = currentPreviewConfig.viewBPadding
-            highResPreviewConfig.viewBBorderWidth = currentPreviewConfig.viewBBorderWidth
-            highResPreviewConfig.viewBShadowIntensity = currentPreviewConfig.viewBShadowIntensity
-            
-            highResPreviewConfig.iconScale = currentPreviewConfig.iconScale
-            highResPreviewConfig.iconRotation = currentPreviewConfig.iconRotation
-            highResPreviewConfig.iconOpacity = currentPreviewConfig.iconOpacity
-            
-            // 创建高分辨率的图标内容
-            let highResIconContent = IconContentViewModel()
-            highResIconContent.contentType = currentIconContent.contentType
-            highResIconContent.selectedPresetType = currentIconContent.selectedPresetType
-            highResIconContent.customImage = currentIconContent.customImage
-            highResIconContent.textConfig = currentIconContent.textConfig
+            let highResIconContent = currentIconContent
             
             // 如果是AI模式，使用AI生成的图标
             if isInAIMode, let aiIcon = lastGeneratedIcon {
@@ -412,6 +397,11 @@ class IconGeneratorViewModel: ObservableObject {
             }
             
             print("🔄 IconGeneratorViewModel: 开始生成高分辨率图标")
+            print("🔄 IconGeneratorViewModel: 高分辨率图标内容 - contentType: \(highResIconContent.contentType), presetType: \(highResIconContent.selectedPresetType)")
+            print("🔄 IconGeneratorViewModel: 高分辨率预览配置 - viewA背景: \(highResPreviewConfig.viewABackgroundColor), viewB背景: \(highResPreviewConfig.viewBBackgroundColor)")
+            print("🔄 IconGeneratorViewModel: 高分辨率图标设置 - scale: \(highResPreviewConfig.iconScale), rotation: \(highResPreviewConfig.iconRotation), opacity: \(highResPreviewConfig.iconOpacity)")
+            print("🔄 IconGeneratorViewModel: 高分辨率文本设置 - text: '\(highResIconContent.textConfig.text)', color: \(highResIconContent.textConfig.textColor)")
+            
             // 生成高分辨率图标
             image = try await iconGeneratorService.generatePreview(
                 iconContent: highResIconContent,
