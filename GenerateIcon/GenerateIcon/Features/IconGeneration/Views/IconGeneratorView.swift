@@ -13,6 +13,7 @@ struct IconGeneratorView: View {
     @State private var saveAlertMessage = ""
     @State private var isSaving = false
     @State private var buttonRefreshTrigger = 0 // 用于强制刷新按钮
+    @State private var showingHistory = false // 历史记录弹窗
     
     // 便捷访问全局ViewModel
     private var iconGenerator: IconGeneratorViewModel {
@@ -203,22 +204,35 @@ struct IconGeneratorView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingSettings.toggle()
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.title2)
-                            .foregroundColor(.accentColor)
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            showingHistory = true
+                        }) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
+                        
+                        Button(action: {
+                            showingSettings.toggle()
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                SettingsPanelView(
-                    iconContent: globalViewModels.iconContent,
-                    previewConfig: globalViewModels.previewConfig,
-                    isVisible: $showingSettings
-                )
-            }
+        .sheet(isPresented: $showingSettings) {
+            SettingsPanelView(
+                iconContent: globalViewModels.iconContent,
+                previewConfig: globalViewModels.previewConfig,
+                isVisible: $showingSettings
+            )
+        }
+        .sheet(isPresented: $showingHistory) {
+            HistoryListView()
+        }
             .alert("确认保存", isPresented: $showingSaveConfirmation) {
                 Button("取消", role: .cancel) { }
                 Button("保存") {

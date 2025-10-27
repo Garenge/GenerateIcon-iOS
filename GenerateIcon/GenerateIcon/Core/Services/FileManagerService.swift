@@ -37,12 +37,15 @@ class FileManagerService: ObservableObject {
     
     private let documentsDirectory: URL
     private let iconsDirectory: URL
+    private let filesDirectory: URL // 沙盒 files 目录，用于保存生成记录
     
     init() {
         documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         iconsDirectory = documentsDirectory.appendingPathComponent("GeneratedIcons")
+        filesDirectory = documentsDirectory.appendingPathComponent("files")
         
         createIconsDirectoryIfNeeded()
+        createFilesDirectoryIfNeeded()
         loadSavedIcons()
     }
     
@@ -103,6 +106,9 @@ class FileManagerService: ObservableObject {
             throw NSError(domain: "FileManagerService", code: -1, userInfo: [NSLocalizedDescriptionKey: "图片尺寸无效"])
         }
         
+        // 同时保存到沙盒 files 目录
+        try await saveToFilesDirectory(image, extension: "png")
+        
         return try await withCheckedThrowingContinuation { continuation in
             print("📸 FileManagerService: 创建PhotoLibrarySaveTarget")
             
@@ -125,6 +131,22 @@ class FileManagerService: ObservableObject {
         }
     }
     
+    // MARK: - 保存到沙盒 files 目录
+    private func saveToFilesDirectory(_ image: UIImage, extension ext: String) async throws {
+        print("💾 FileManagerService: 开始保存图片到沙盒 files 目录")
+        
+        guard let data = image.pngData() else {
+            print("❌ FileManagerService: 图片数据转换失败")
+            throw FileManagerError.imageDataConversionFailed
+        }
+        
+        let fileName = generateTimestampFileName(extension: ext)
+        let fileURL = filesDirectory.appendingPathComponent(fileName)
+        
+        try data.write(to: fileURL)
+        print("✅ FileManagerService: 图片已保存到沙盒: \(fileURL.path)")
+    }
+    
     // MARK: - 获取保存的图标列表
     func getSavedIcons() throws -> [URL] {
         let contents = try FileManager.default.contentsOfDirectory(
@@ -138,6 +160,35 @@ class FileManagerService: ObservableObject {
             let date2 = try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate
             return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
         }
+    }
+    
+    // MARK: - 获取历史文件列表
+    func getHistoryFiles() throws -> [URL] {
+        let contents = try FileManager.default.contentsOfDirectory(
+            at: filesDirectory,
+            includingPropertiesForKeys: [.creationDateKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        )
+        
+        return contents.sorted { url1, url2 in
+            let date1 = try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate
+            let date2 = try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate
+            return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
+        }
+    }
+    
+    // MARK: - 删除历史文件
+    func deleteHistoryFile(at url: URL) throws {
+        try FileManager.default.removeItem(at: url)
+        print("🗑️ 删除历史文件: \(url.path)")
+    }
+    
+    // MARK: - 批量删除历史文件
+    func deleteHistoryFiles(at urls: [URL]) throws {
+        for url in urls {
+            try FileManager.default.removeItem(at: url)
+        }
+        print("🗑️ 批量删除 \(urls.count) 个历史文件")
     }
     
     // MARK: - 加载保存的图标
@@ -162,6 +213,33 @@ class FileManagerService: ObservableObject {
                 withIntermediateDirectories: true
             )
         }
+    }
+    
+    private func createFilesDirectoryIfNeeded() {
+        if !FileManager.default.fileExists(atPath: filesDirectory.path) {
+            try? FileManager.default.createDirectory(
+                at: filesDirectory,
+                withIntermediateDirectories: true
+            )
+        }
+    }
+    
+    // MARK: - 生成时间戳文件名
+    private func generateTimestampFileName(extension ext: String) -> String {
+        let now = Date()
+        
+        // 使用 DateFormatter 格式化日期时间
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMddHHmmss"
+        let timestamp = formatter.string(from: now)
+        
+        // 获取毫秒（精确到毫秒）
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.nanosecond], from: now)
+        let nanosecond = components.nanosecond ?? 0
+        let millisecond = nanosecond / 1_000_000 // 纳秒转毫秒
+        
+        return "\(timestamp)\(String(format: "%03d", millisecond)).\(ext)"
     }
     
     private func saveIconSync(image: UIImage, name: String, size: CGSize) throws -> URL {
@@ -276,7 +354,27 @@ class FileManagerService: ObservableObject {
         }
         
         print("✅ ZIP文件创建成功: \(zipURL.path)")
+        
+        // 同时保存ZIP文件到沙盒 files 目录
+        try saveZipToFilesDirectory(zipURL: zipURL)
+        
         return zipURL
+    }
+    
+    // MARK: - 保存ZIP到沙盒 files 目录
+    private func saveZipToFilesDirectory(zipURL: URL) throws {
+        print("💾 FileManagerService: 开始保存ZIP文件到沙盒 files 目录")
+        
+        // 读取ZIP文件数据
+        let zipData = try Data(contentsOf: zipURL)
+        
+        // 生成时间戳文件名
+        let fileName = generateTimestampFileName(extension: "zip")
+        let fileURL = filesDirectory.appendingPathComponent(fileName)
+        
+        // 保存到 files 目录
+        try zipData.write(to: fileURL)
+        print("✅ FileManagerService: ZIP文件已保存到沙盒: \(fileURL.path)")
     }
     
     // MARK: - 创建标准ZIP数据
