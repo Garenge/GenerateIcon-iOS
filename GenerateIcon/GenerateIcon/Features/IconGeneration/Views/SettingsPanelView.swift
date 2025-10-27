@@ -49,7 +49,7 @@ struct SettingsPanelView: View {
             
             // 设置选项区域
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 12) {
                     
                     // ViewA 设置
                     viewASettings
@@ -94,20 +94,22 @@ struct SettingsPanelView: View {
                 
                 HStack {
                     Text("圆角半径: \(Int(previewConfig.viewACornerRadius))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewACornerRadius, in: 0...50)
                 }
                 
                 HStack {
                     Text("内边距: \(Int(previewConfig.viewAPadding))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewAPadding, in: 0...50)
                 }
                 
                 HStack {
                     Text("边框宽度: \(Int(previewConfig.viewABorderWidth))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewABorderWidth, in: 0...10)
                 }
             }
-            .padding(.leading)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
@@ -127,25 +129,28 @@ struct SettingsPanelView: View {
                 
                 HStack {
                     Text("圆角半径: \(Int(previewConfig.viewBCornerRadius))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewBCornerRadius, in: 0...50)
                 }
                 
                 HStack {
                     Text("内边距: \(Int(previewConfig.viewBPadding))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewBPadding, in: 0...50)
                 }
                 
                 HStack {
                     Text("边框宽度: \(Int(previewConfig.viewBBorderWidth))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewBBorderWidth, in: 0...10)
                 }
                 
                 HStack {
                     Text("阴影强度: \(Int(previewConfig.viewBShadowIntensity))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.viewBShadowIntensity, in: 0...50)
                 }
             }
-            .padding(.leading)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
@@ -162,20 +167,22 @@ struct SettingsPanelView: View {
             Group {
                 HStack {
                     Text("图标缩放: \(String(format: "%.1f", previewConfig.iconScale))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.iconScale, in: 0.5...2.0)
                 }
                 
                 HStack {
                     Text("图标旋转: \(Int(previewConfig.iconRotation))°")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.iconRotation, in: 0...360)
                 }
                 
                 HStack {
                     Text("图标透明度: \(String(format: "%.1f", previewConfig.iconOpacity))")
+                        .frame(width: 100, alignment: .leading)
                     Slider(value: $previewConfig.iconOpacity, in: 0.0...1.0)
                 }
             }
-            .padding(.leading)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
