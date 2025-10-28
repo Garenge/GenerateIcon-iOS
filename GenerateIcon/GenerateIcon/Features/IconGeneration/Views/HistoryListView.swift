@@ -12,6 +12,7 @@ struct HistoryListView: View {
     @State private var showingShareSheet = false
     @State private var fileToShare: URL?
     @State private var isLoading = true
+    @State private var showingShareAlert = false
     
     private let fileManager = FileManagerService()
     
@@ -69,7 +70,7 @@ struct HistoryListView: View {
                                 if isEditMode {
                                     toggleSelection(file.url)
                                 } else {
-                                    shareFile(file.url)
+                                    handleFileTap(file)
                                 }
                             }
                         }
@@ -136,6 +137,20 @@ struct HistoryListView: View {
                     ShareSheet(activityItems: [fileToShare])
                 }
             }
+            .alert("分享文件", isPresented: $showingShareAlert) {
+                Button("取消", role: .cancel) { }
+                Button("分享") {
+                    if let fileToShare = fileToShare {
+                        showingShareSheet = true
+                    }
+                }
+            } message: {
+                if let fileToShare = fileToShare {
+                    Text("是否分享文件：\(fileToShare.lastPathComponent)？")
+                } else {
+                    Text("是否分享此文件？")
+                }
+            }
         }
     }
     
@@ -198,10 +213,11 @@ struct HistoryListView: View {
         }
     }
     
-    // MARK: - 分享文件
-    private func shareFile(_ url: URL) {
-        fileToShare = url
-        showingShareSheet = true
+    // MARK: - 处理文件点击
+    private func handleFileTap(_ file: HistoryFile) {
+        // 直接弹出分享确认对话框
+        fileToShare = file.url
+        showingShareAlert = true
     }
     
     // MARK: - 删除文件
